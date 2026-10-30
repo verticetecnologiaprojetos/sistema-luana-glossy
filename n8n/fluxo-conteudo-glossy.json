@@ -1,0 +1,301 @@
+{
+  "name": "Padrao Vertice - Fluxo de Conteudo Glossy Luana Frias",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "webhook-conteudo-glossy",
+        "options": {}
+      },
+      "id": "node-webhook-entrada",
+      "name": "Faixa 1: Webhook UaZapi (Entrada)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.body.fromMe }}",
+              "value2": false
+            }
+          ]
+        }
+      },
+      "id": "node-anti-eco",
+      "name": "Faixa 1: Filtro Anti-Eco (fromMe: false)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{ $json.body.message.conversation.toLowerCase().split(' ')[0] }}",
+                    "value2": "/gerar"
+                  }
+                ]
+              },
+              "outputKey": "gerar"
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{ $json.body.message.conversation.toLowerCase().split(' ')[0] }}",
+                    "value2": "/postar"
+                  }
+                ]
+              },
+              "outputKey": "postar"
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{ $json.body.message.conversation.toLowerCase().split(' ')[0] }}",
+                    "value2": "/agendar"
+                  }
+                ]
+              },
+              "outputKey": "agendar"
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{ $json.body.message.conversation.toLowerCase().split(' ')[0] }}",
+                    "value2": "/ajuda"
+                  }
+                ]
+              },
+              "outputKey": "ajuda"
+            }
+          ]
+        }
+      },
+      "id": "node-router-comandos",
+      "name": "Faixa 1: Roteador de Comandos",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "model": "anthropic/claude-3.5-sonnet",
+        "systemPrompt": "Você é a AImee Social Glossy, especialista em moda fitness feminina premium para a revendedora oficial @glossyluanaudia em Uberlândia - MG.\nGere um carrossel de 4 a 6 lâminas destacando o cós anatômico duplo que NÃO enrola, poliamida acetinada zero transparência e entrega rápida por malinha condicional em Uberlândia.\nRetorne estritamente um JSON com: titulo, slides (array de objetos com slide_number, headline, body, visual_cue), legenda estruturada com parágrafos limpos e bloco de hashtags.",
+        "prompt": "={{ $json.body.message.conversation.replace('/gerar ', '') || 'Lançamento nova tonalidade Cookie e alta sustentação' }}"
+      },
+      "id": "node-ai-generator",
+      "name": "Faixa 2: Motor IA (OpenRouter / Claude 3.5 Sonnet)",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1.4,
+      "position": [960, 180]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "name"
+        },
+        "table": {
+          "__rl": true,
+          "value": "posts",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "title": "={{ $json.titulo }}",
+            "caption": "={{ $json.legenda }}",
+            "status": "aguardando_aprovacao",
+            "account": "glossyluanaudia",
+            "created_at": "={{ $now }}"
+          }
+        }
+      },
+      "id": "node-supabase-posts",
+      "name": "Faixa 3: Supabase (Gravar Rascunho do Post)",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1200, 180]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "https://api.uazapi.com/v2/send-message",
+        "options": {},
+        "bodyParametersUi": {
+          "parameter": [
+            {
+              "name": "phone",
+              "value": "5534993002424"
+            },
+            {
+              "name": "message",
+              "value": "=✨ *Prévia do Carrossel #{ $json.id } Gerada!*\n\n*Título:* {{ $json.title }}\n\n*Legenda:*\n{{ $json.caption }}\n\nPara publicar imediatamente no Instagram e Grupo VIP, digite:\n`/postar {{ $json.id }}`\n\nPara agendar para uma data específica:\n`/agendar {{ $json.id }} 2026-11-05 11:30`"
+            }
+          ]
+        }
+      },
+      "id": "node-uazapi-preview",
+      "name": "Faixa 3: Enviar Prévia de Aprovação WhatsApp (UaZapi)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1440, 180]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "https://graph.facebook.com/v21.0/17841400000000000/media",
+        "options": {},
+        "bodyParametersUi": {
+          "parameter": [
+            {
+              "name": "media_type",
+              "value": "CAROUSEL"
+            },
+            {
+              "name": "caption",
+              "value": "={{ $json.caption }}"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $env.META_GRAPH_ACCESS_TOKEN }}"
+            }
+          ]
+        }
+      },
+      "id": "node-meta-instagram",
+      "name": "Faixa 4: Meta Graph API v21 (Publicar Feed Instagram)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, 360]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "https://api.uazapi.com/v2/send-message",
+        "options": {},
+        "bodyParametersUi": {
+          "parameter": [
+            {
+              "name": "chat_id",
+              "value": "120363000000000000@g.us"
+            },
+            {
+              "name": "message",
+              "value": "=🚨 *NOVO DROP GLOSSY DISPONÍVEL!* 🦩\n\n{{ $json.caption }}\n\nPeças exclusivas com pronta-entrega e sacolinha condicional em Uberlândia! Peça a sua no privado: (34) 99300-2424"
+            }
+          ]
+        }
+      },
+      "id": "node-uazapi-mirror-vip",
+      "name": "Faixa 4: Espelhar no Grupo VIP Select (WhatsApp)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1440, 360]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "id": "node-cron-schedule",
+      "name": "Faixa 5: Cron de Agendamento (Anti-Loop)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [680, 560]
+    }
+  ],
+  "connections": {
+    "Faixa 1: Webhook UaZapi (Entrada)": {
+      "main": [
+        [
+          {
+            "node": "Faixa 1: Filtro Anti-Eco (fromMe: false)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Faixa 1: Filtro Anti-Eco (fromMe: false)": {
+      "main": [
+        [
+          {
+            "node": "Faixa 1: Roteador de Comandos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Faixa 1: Roteador de Comandos": {
+      "main": [
+        [
+          {
+            "node": "Faixa 2: Motor IA (OpenRouter / Claude 3.5 Sonnet)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Faixa 4: Meta Graph API v21 (Publicar Feed Instagram)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Faixa 2: Motor IA (OpenRouter / Claude 3.5 Sonnet)": {
+      "main": [
+        [
+          {
+            "node": "Faixa 3: Supabase (Gravar Rascunho do Post)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Faixa 3: Supabase (Gravar Rascunho do Post)": {
+      "main": [
+        [
+          {
+            "node": "Faixa 3: Enviar Prévia de Aprovação WhatsApp (UaZapi)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Faixa 4: Meta Graph API v21 (Publicar Feed Instagram)": {
+      "main": [
+        [
+          {
+            "node": "Faixa 4: Espelhar no Grupo VIP Select (WhatsApp)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

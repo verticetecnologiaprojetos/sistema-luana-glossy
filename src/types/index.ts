@@ -26,6 +26,30 @@ export interface InventoryItem {
   imageUrl?: string;
 }
 
+// Sacolinha Condicional
+export interface SacolinhaItem {
+  itemId: string;
+  name: string;
+  size: ItemSize;
+  color: string;
+  price: number;
+  status: 'em_prova' | 'comprado' | 'devolvido';
+}
+
+export interface SacolinhaCondicional {
+  id: string;
+  conversationId: string;
+  contactName: string;
+  contactPhone: string;
+  neighborhood: string;
+  items: SacolinhaItem[];
+  totalValue: number;
+  dispatchedAt: string;
+  returnDeadline: string;
+  status: 'ativa' | 'concluida' | 'cancelada';
+  deliveryFee?: number;
+}
+
 // Padrão Vértice CRM Omnichannel
 export type ConversationQueue = 'aguardando' | 'meus' | 'espera' | 'finalizados';
 export type MessageSenderType = 'contact' | 'agent' | 'system' | 'bot';
@@ -38,6 +62,7 @@ export interface Message {
   content: string;
   mediaType?: 'text' | 'audio' | 'image' | 'document';
   mediaUrl?: string;
+  fileName?: string;
   audioDuration?: string;
   status: 'sending' | 'sent' | 'delivered' | 'read';
   isInternalNote?: boolean;
@@ -61,6 +86,7 @@ export interface Conversation {
   stage: 'Novo Lead' | 'Em Atendimento' | 'Condicional Enviado' | 'Venda Concluída' | 'Aguardando Retorno';
   dealValue?: number;
   condicionalItems?: string[];
+  activeSacolinha?: SacolinhaCondicional;
   notes?: string;
 }
 
@@ -91,14 +117,48 @@ export interface ScheduledPost {
   };
 }
 
+export interface WhatsAppGroup {
+  id: string;
+  name: string;
+  participantCount: number;
+  isVip: boolean;
+  inviteLink: string;
+  lastActivity?: string;
+}
+
 export interface VipGroupPost {
   id: string;
-  type: 'spoiler' | 'enquete' | 'lancamento' | 'reposicao' | 'catalogo';
+  type: 'spoiler' | 'enquete' | 'promocao' | 'catalogo';
   title: string;
   text: string;
   mediaType: 'image' | 'video' | 'poll' | 'document';
   pollOptions?: string[];
-  targetGroup: string;
+  imageUrl?: string;
+  targetGroupId: string;
+  targetGroupName: string;
   scheduledFor: string;
   status: 'pronto' | 'enviado';
+}
+
+export interface LinktreeItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  url: string;
+  badge?: string;
+  type: 'whatsapp' | 'group' | 'pdf' | 'location';
+  active: boolean;
+}
+
+export interface UserProfile {
+  name: string;
+  email: string;
+  phone: string;
+  role: string;
+  city: string;
+  baseNeighborhood: string;
+  pixKey: string;
+  openRouterKey: string;
+  instagramUser: string;
+  defaultCondicionalHours: number;
 }
