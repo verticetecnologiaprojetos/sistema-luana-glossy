@@ -3,9 +3,9 @@ export type ItemCategory =
   | 'Tops'
   | 'Croppeds'
   | 'Bermudas e Shorts'
-  | 'T-Shirts'
+  | 'Camisetas'
   | 'Regatas'
-  | 'Macacões e Conjuntos';
+  | 'Macacões';
 
 export type ItemSize = 'PP' | 'P' | 'M' | 'G' | 'GG' | 'Único' | 'Não informado';
 
@@ -23,56 +23,82 @@ export interface InventoryItem {
   isLimitedEdition?: boolean;
   isLastPiece?: boolean;
   notes?: string;
+  imageUrl?: string;
 }
 
-export type LeadStatus = 
-  | 'novo'
-  | 'em_atendimento'
-  | 'condicional_enviado'
-  | 'venda_concluida'
-  | 'aguardando_retorno';
+// Padrão Vértice CRM Omnichannel
+export type ConversationQueue = 'aguardando' | 'meus' | 'espera' | 'finalizados';
+export type MessageSenderType = 'contact' | 'agent' | 'system' | 'bot';
 
-export interface Lead {
+export interface Message {
   id: string;
-  name: string;
-  phone: string;
-  neighborhood?: string;
-  city: string;
-  sizeInterest?: ItemSize;
-  status: LeadStatus;
-  notes?: string;
-  lastContact: string;
-  cartItems?: string[];
-  totalValue?: number;
+  conversationId: string;
+  senderType: MessageSenderType;
+  senderName?: string;
+  content: string;
+  mediaType?: 'text' | 'audio' | 'image' | 'document';
+  mediaUrl?: string;
+  audioDuration?: string;
+  status: 'sending' | 'sent' | 'delivered' | 'read';
+  isInternalNote?: boolean;
+  createdAt: string;
 }
 
-export type PostType = 'comercial' | 'lifestyle' | 'apresentacao';
+export interface Conversation {
+  id: string;
+  contactId: string;
+  contactName: string;
+  contactPhone: string;
+  contactAvatar?: string;
+  neighborhood: string;
+  city: string;
+  queue: ConversationQueue;
+  assignedTo?: string;
+  lastMessage: string;
+  lastMessageTime: string;
+  unreadCount: number;
+  tags: string[];
+  stage: 'Novo Lead' | 'Em Atendimento' | 'Condicional Enviado' | 'Venda Concluída' | 'Aguardando Retorno';
+  dealValue?: number;
+  condicionalItems?: string[];
+  notes?: string;
+}
 
-export interface ContentPost {
+export interface QuickReply {
+  id: string;
+  shortcut: string;
+  title: string;
+  content: string;
+}
+
+export interface ScheduledPost {
   id: string;
   title: string;
-  type: PostType;
+  format: 'comercial' | 'lifestyle' | 'apresentacao';
   productName: string;
-  productColor: string;
-  price?: number;
+  color: string;
+  price: number;
   caption: string;
   hashtags: string[];
-  status: 'rascunho' | 'pronto' | 'publicado';
-  syncToVip: boolean;
-  scheduledFor?: string;
+  imageUrl: string;
+  scheduledDate: string;
+  scheduledTime: string;
+  status: 'rascunho' | 'aguardando_aprovacao' | 'agendado' | 'publicado';
+  channels: {
+    instagram: boolean;
+    facebook: boolean;
+    whatsappVip: boolean;
+  };
 }
 
-export interface ChatMessage {
+export interface VipGroupPost {
   id: string;
-  sender: 'cliente' | 'glossy_ia' | 'luana_humano';
+  type: 'spoiler' | 'enquete' | 'lancamento' | 'reposicao' | 'catalogo';
+  title: string;
   text: string;
-  timestamp: string;
-  isHandoff?: boolean;
-  handoffData?: {
-    clientName?: string;
-    product?: string;
-    size?: string;
-    address?: string;
-    phone?: string;
-  };
+  mediaType: 'image' | 'video' | 'poll' | 'document';
+  pollOptions?: string[];
+  targetGroup: string;
+  scheduledFor: string;
+  status: 'pronto' | 'enviado';
 }

@@ -1,1549 +1,2156 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import Image from 'next/image';
 import {
+  MessageSquare,
+  Users,
+  CheckCircle2,
+  Clock,
+  Send,
+  Mic,
+  Lock,
   ShoppingBag,
   Sparkles,
   Layers,
-  Users,
-  Camera,
-  Gift,
-  FolderOpen,
   Settings,
   Search,
   Plus,
-  Send,
-  Bot,
-  User,
-  CheckCircle2,
-  Clock,
-  AlertCircle,
-  Truck,
-  TrendingUp,
-  Tag,
-  DollarSign,
-  Share2,
-  ExternalLink,
-  RefreshCw,
   PhoneCall,
-  Key,
-  ShieldCheck,
-  Award,
+  QrCode,
+  ExternalLink,
+  Share2,
+  Moon,
+  Sun,
+  LogOut,
+  ChevronRight,
+  Filter,
+  Check,
+  Copy,
+  FileText,
+  RefreshCw,
+  Play,
+  Pause,
+  Calendar,
+  Truck,
+  ArrowRight,
+  TrendingUp,
+  MapPin,
+  Flame,
+  FileCheck,
+  MessageCircle,
+  HelpCircle,
+  BarChart3,
+  Sliders,
+  DollarSign,
+  Tag,
+  AlertCircle
 } from 'lucide-react';
+
 import {
   INITIAL_INVENTORY,
-  INITIAL_LEADS,
-  INITIAL_POSTS,
-  CATALOG_LINKS,
-} from '@/data/initialData';
+  INITIAL_CONVERSATIONS,
+  INITIAL_MESSAGES,
+  INITIAL_QUICK_REPLIES,
+  INITIAL_SCHEDULED_POSTS,
+  INITIAL_VIP_POSTS,
+  LINKTREE_CONFIG,
+  CATALOG_LINKS
+} from '../data/initialData';
+
 import {
   InventoryItem,
-  Lead,
-  ContentPost,
-  ChatMessage,
+  Conversation,
+  Message,
+  QuickReply,
+  ScheduledPost,
+  VipGroupPost,
+  ConversationQueue,
   ItemCategory,
-  ItemSize,
-  PostType,
-} from '@/types';
+  ItemSize
+} from '../types';
 
 export default function Home() {
+  // ----------------------------------------------------
+  // Autenticação & Sessão
+  // ----------------------------------------------------
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+  const [loginEmail, setLoginEmail] = useState('luana@glossyluanaudia.com.br');
+  const [loginPassword, setLoginPassword] = useState('Glossylu@24');
+  const [loginError, setLoginError] = useState('');
+
+  // ----------------------------------------------------
+  // Tema Visual: Padrão Light Boutique (Delicado e Feminino) com Toggle Dark
+  // ----------------------------------------------------
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+
+  // ----------------------------------------------------
+  // Navegação Lateral (Vertical Sidebar)
+  // ----------------------------------------------------
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'inventory' | 'crm' | 'agent' | 'content' | 'loyalty' | 'catalogs' | 'settings'
+    'overview' | 'crm' | 'inventory' | 'posts' | 'vip_group' | 'linktree' | 'channels' | 'loyalty'
   >('overview');
 
-  // Estados de dados
+  // ----------------------------------------------------
+  // Estados de Dados (Estoque, CRM, Postagens, etc.)
+  // ----------------------------------------------------
   const [inventory, setInventory] = useState<InventoryItem[]>(INITIAL_INVENTORY);
-  const [leads, setLeads] = useState<Lead[]>(INITIAL_LEADS);
-  const [posts, setPosts] = useState<ContentPost[]>(INITIAL_POSTS);
+  const [conversations, setConversations] = useState<Conversation[]>(INITIAL_CONVERSATIONS);
+  const [messages, setMessages] = useState<Record<string, Message[]>>(INITIAL_MESSAGES);
+  const [scheduledPosts, setScheduledPosts] = useState<ScheduledPost[]>(INITIAL_SCHEDULED_POSTS);
+  const [vipPosts, setVipPosts] = useState<VipGroupPost[]>(INITIAL_VIP_POSTS);
+
+  // CRM Omnichannel States
+  const [activeQueue, setActiveQueue] = useState<ConversationQueue>('meus');
+  const [selectedConversationId, setSelectedConversationId] = useState<string>('conv-1');
+  const [chatComposerText, setChatComposerText] = useState('');
+  const [composerMode, setComposerMode] = useState<'client' | 'internal_note'>('client');
+  const [showQuickReplies, setShowQuickReplies] = useState(false);
+  const [crmSearchQuery, setCrmSearchQuery] = useState('');
+  const [isPlayingAudio, setIsPlayingAudio] = useState<string | null>(null);
 
   // Filtros de Estoque
-  const [searchTerm, setSearchTerm] = useState('');
+  const [inventorySearch, setInventorySearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Todas');
   const [selectedSize, setSelectedSize] = useState<string>('Todos');
-  const [showBlackFridayOnly, setShowBlackFridayOnly] = useState(false);
+  const [onlyBlackFriday, setOnlyBlackFriday] = useState<boolean>(false);
 
-  // Chat do Agente IA
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    {
-      id: 'msg-1',
-      sender: 'glossy_ia',
-      text: 'Oii! Seja muito bem-vinda à Glossy Uberlândia! ✨🤎 Eu sou a Glossy, assistente virtual da Luana (@glossyluanaudia).\n\nTrabalhamos com moda fitness premium com cós alto que NÃO enrola e tecido acetinado com ZERO transparência.\n\nQual peça você procura hoje e qual o seu tamanho (P, M, G)? 🛍️',
-      timestamp: '14:30',
-    },
-  ]);
-  const [chatInput, setChatInput] = useState('');
-  const [isChatLoading, setIsChatLoading] = useState(false);
-  const [openRouterKey, setOpenRouterKey] = useState('');
+  // Criador de Postagens (Painel tipo Daiane)
+  const [newPostFormat, setNewPostFormat] = useState<'comercial' | 'lifestyle' | 'apresentacao'>('comercial');
+  const [newPostProduct, setNewPostProduct] = useState(inventory[2].name + ' - ' + inventory[2].color);
+  const [newPostPrice, setNewPostPrice] = useState(inventory[2].price.toString());
+  const [newPostCaption, setNewPostCaption] = useState(INITIAL_SCHEDULED_POSTS[0].caption);
+  const [postSuccessNotice, setPostSuccessNotice] = useState<string | null>(null);
 
-  // Criador de Post
-  const [selectedPostType, setSelectedPostType] = useState<PostType>('comercial');
-  const [selectedProductIndex, setSelectedProductIndex] = useState(0);
-  const [customCaption, setCustomCaption] = useState(INITIAL_POSTS[0].caption);
-  const [syncToVipToggle, setSyncToVipToggle] = useState(true);
-  const [publishSuccessMessage, setPublishSuccessMessage] = useState<string | null>(null);
+  // QR Code WhatsApp Timer
+  const [qrSecondsLeft, setQrSecondsLeft] = useState(45);
+  const [isQrConnected, setIsQrConnected] = useState(true);
 
-  // Sorteio
-  const [raffleWinner, setRaffleWinner] = useState<string | null>(null);
-  const [isSpinning, setIsSpinning] = useState(false);
+  // Toast / Feedback
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Modais simples
-  const [condicionalModalItem, setCondicionalModalItem] = useState<InventoryItem | null>(null);
-  const [condicionalClientName, setCondicionalClientName] = useState('');
-  const [condicionalNeighborhood, setCondicionalNeighborhood] = useState('Morada da Colina');
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
 
-  // Estatísticas calculadas
-  const stats = useMemo(() => {
-    const totalPieces = inventory.reduce((acc, item) => acc + item.quantity, 0);
-    const totalValue = inventory.reduce((acc, item) => acc + item.quantity * item.price, 0);
-    const bfPieces = inventory
-      .filter((item) => item.isBlackFriday)
-      .reduce((acc, item) => acc + item.quantity, 0);
-    const lowStockItems = inventory.filter((item) => item.quantity <= 1).length;
-    return { totalPieces, totalValue, bfPieces, lowStockItems };
-  }, [inventory]);
+  // Timer para o QR code
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setQrSecondsLeft((prev) => (prev > 1 ? prev - 1 : 45));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
-  // Filtro de inventário
+  // Conversa ativa selecionada
+  const activeConversation = useMemo(() => {
+    return conversations.find((c) => c.id === selectedConversationId) || conversations[0];
+  }, [conversations, selectedConversationId]);
+
+  // Mensagens da conversa ativa
+  const currentMessages = useMemo(() => {
+    return messages[selectedConversationId] || [];
+  }, [messages, selectedConversationId]);
+
+  // Conversas filtradas por fila e busca
+  const filteredConversations = useMemo(() => {
+    return conversations.filter((c) => {
+      const matchesQueue = c.queue === activeQueue;
+      const matchesSearch =
+        c.contactName.toLowerCase().includes(crmSearchQuery.toLowerCase()) ||
+        c.neighborhood.toLowerCase().includes(crmSearchQuery.toLowerCase()) ||
+        c.contactPhone.includes(crmSearchQuery);
+      return matchesQueue && matchesSearch;
+    });
+  }, [conversations, activeQueue, crmSearchQuery]);
+
+  // Estoque filtrado
   const filteredInventory = useMemo(() => {
     return inventory.filter((item) => {
-      const matchesSearch =
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.color.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.subcategory.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = selectedCategory === 'Todas' || item.category === selectedCategory;
-      const matchesSize = selectedSize === 'Todos' || item.size === selectedSize;
-      const matchesBF = !showBlackFridayOnly || item.isBlackFriday;
-      return matchesSearch && matchesCategory && matchesSize && matchesBF;
-    });
-  }, [inventory, searchTerm, selectedCategory, selectedSize, showBlackFridayOnly]);
+      const matchSearch =
+        item.name.toLowerCase().includes(inventorySearch.toLowerCase()) ||
+        item.color.toLowerCase().includes(inventorySearch.toLowerCase()) ||
+        item.subcategory.toLowerCase().includes(inventorySearch.toLowerCase());
 
-  // Ações de Estoque
-  const handleQuantityChange = (id: string, delta: number) => {
+      const matchCategory = selectedCategory === 'Todas' || item.category === selectedCategory;
+      const matchSize = selectedSize === 'Todos' || item.size === selectedSize;
+      const matchBf = onlyBlackFriday ? item.isBlackFriday : true;
+
+      return matchSearch && matchCategory && matchSize && matchBf;
+    });
+  }, [inventory, inventorySearch, selectedCategory, selectedSize, onlyBlackFriday]);
+
+  // Métricas de estoque
+  const stockMetrics = useMemo(() => {
+    const totalPieces = inventory.reduce((sum, item) => sum + item.quantity, 0);
+    const totalValue = inventory.reduce((sum, item) => sum + item.quantity * item.price, 0);
+    const bfPieces = inventory
+      .filter((i) => i.isBlackFriday)
+      .reduce((sum, item) => sum + item.quantity, 0);
+    return { totalPieces, totalValue, bfPieces };
+  }, [inventory]);
+
+  // Enviar mensagem ou Nota Interna no CRM
+  const handleSendMessage = () => {
+    if (!chatComposerText.trim()) return;
+
+    const isInternal = composerMode === 'internal_note';
+    const newMsg: Message = {
+      id: `msg-${Date.now()}`,
+      conversationId: selectedConversationId,
+      senderType: isInternal ? 'system' : 'agent',
+      senderName: 'Luana Frias',
+      content: isInternal
+        ? `🔒 NOTA INTERNA VÉRTICE: ${chatComposerText.trim()}`
+        : chatComposerText.trim(),
+      isInternalNote: isInternal,
+      status: 'sent',
+      createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    setMessages((prev) => ({
+      ...prev,
+      [selectedConversationId]: [...(prev[selectedConversationId] || []), newMsg]
+    }));
+
+    // Atualiza última mensagem na conversa
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === selectedConversationId
+          ? {
+              ...c,
+              lastMessage: isInternal ? '🔒 Nota interna adicionada' : chatComposerText.trim(),
+              lastMessageTime: 'Agora'
+            }
+          : c
+      )
+    );
+
+    setChatComposerText('');
+    showToast(isInternal ? 'Nota interna salva com sucesso!' : 'Mensagem enviada via WhatsApp!');
+  };
+
+  // Aplicar resposta rápida
+  const applyQuickReply = (qr: QuickReply) => {
+    setChatComposerText(qr.content);
+    setShowQuickReplies(false);
+  };
+
+  // Baixa rápida de estoque por venda
+  const handleStockSale = (itemId: string) => {
     setInventory((prev) =>
       prev.map((item) => {
-        if (item.id === id) {
-          const newQty = Math.max(0, item.quantity + delta);
-          return { ...item, quantity: newQty };
+        if (item.id === itemId && item.quantity > 0) {
+          return { ...item, quantity: item.quantity - 1 };
         }
         return item;
       })
     );
+    showToast('Baixa de 1 unidade registrada no estoque com sucesso!');
   };
 
-  const handleRegisterSale = (item: InventoryItem) => {
-    if (item.quantity <= 0) return;
-    handleQuantityChange(item.id, -1);
-    const newLead: Lead = {
-      id: `lead-venda-${Date.now()}`,
-      name: 'Cliente Balcão / WhatsApp',
-      phone: '(34) 99300-2424',
-      neighborhood: 'Uberlândia',
-      city: 'Uberlândia',
-      sizeInterest: item.size,
-      status: 'venda_concluida',
-      notes: `Venda direta registrada: ${item.name} (${item.color} - ${item.size}).`,
-      lastContact: 'Agora',
-      cartItems: [`${item.name} ${item.color}`],
-      totalValue: item.price,
+  // Agendar Post
+  const handleSchedulePost = () => {
+    const newPost: ScheduledPost = {
+      id: `sp-${Date.now()}`,
+      title: `${newPostProduct} (${newPostFormat.toUpperCase()})`,
+      format: newPostFormat,
+      productName: newPostProduct,
+      color: 'Conforme modelo selecionado',
+      price: parseFloat(newPostPrice) || 189.90,
+      caption: newPostCaption,
+      hashtags: ['#GlossyByLuanaFrias', '#ModaFitness', '#Uberlandia', '#TreinoComEstilo'],
+      imageUrl: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&auto=format&fit=crop&q=80',
+      scheduledDate: '2026-11-03',
+      scheduledTime: '15:00',
+      status: 'agendado',
+      channels: {
+        instagram: true,
+        facebook: true,
+        whatsappVip: true
+      }
     };
-    setLeads((prev) => [newLead, ...prev]);
+    setScheduledPosts((prev) => [newPost, ...prev]);
+    showToast('Post agendado e enfileirado para o n8n com sucesso!');
   };
 
-  const handleConfirmCondicional = () => {
-    if (!condicionalModalItem || condicionalModalItem.quantity <= 0) return;
-    handleQuantityChange(condicionalModalItem.id, -1);
-    const newLead: Lead = {
-      id: `cond-${Date.now()}`,
-      name: condicionalClientName || 'Cliente Condicional',
-      phone: '(34) 99300-2424',
-      neighborhood: condicionalNeighborhood,
-      city: 'Uberlândia',
-      sizeInterest: condicionalModalItem.size,
-      status: 'condicional_enviado',
-      notes: `Malinha condicional com ${condicionalModalItem.name} (${condicionalModalItem.color} - ${condicionalModalItem.size}) enviada para ${condicionalNeighborhood}.`,
-      lastContact: 'Agora',
-      cartItems: [`${condicionalModalItem.name} ${condicionalModalItem.color}`],
-      totalValue: condicionalModalItem.price,
-    };
-    setLeads((prev) => [newLead, ...prev]);
-    setCondicionalModalItem(null);
-    setCondicionalClientName('');
+  // Disparo simulado no Grupo VIP
+  const handleVipDrop = (type: string) => {
+    showToast(`Disparo de ${type} enviado com sucesso para o Grupo VIP Select da Luana!`);
   };
 
-  // Enviar mensagem no chat da IA
-  const handleSendMessage = async (customText?: string) => {
-    const textToSend = customText || chatInput;
-    if (!textToSend.trim() || isChatLoading) return;
-
-    const userMsg: ChatMessage = {
-      id: `msg-${Date.now()}`,
-      sender: 'cliente',
-      text: textToSend,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-
-    setChatMessages((prev) => [...prev, userMsg]);
-    if (!customText) setChatInput('');
-    setIsChatLoading(true);
-
-    try {
-      const res = await fetch('/api/agent/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: textToSend,
-          history: chatMessages,
-          apiKey: openRouterKey,
-        }),
-      });
-      const data = await res.json();
-
-      const aiMsg: ChatMessage = {
-        id: `ai-${Date.now()}`,
-        sender: 'glossy_ia',
-        text: data.reply,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isHandoff: data.isHandoff,
-        handoffData: data.handoffData,
-      };
-      setChatMessages((prev) => [...prev, aiMsg]);
-    } catch {
-      const errorMsg: ChatMessage = {
-        id: `err-${Date.now()}`,
-        sender: 'glossy_ia',
-        text: 'Desculpe, ocorreu uma instabilidade rápida. Pode repetir, por favor? ✨',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-      setChatMessages((prev) => [...prev, errorMsg]);
-    } finally {
-      setIsChatLoading(false);
+  // Login handler
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loginEmail && loginPassword) {
+      setIsAuthenticated(true);
+      setLoginError('');
+      showToast('Bem-vinda, Luana! Sessão iniciada com sucesso.');
+    } else {
+      setLoginError('Por favor preencha o e-mail e a senha.');
     }
   };
 
-  // Publicar post
-  const handlePublishPost = async () => {
-    setPublishSuccessMessage(null);
-    try {
-      const res = await fetch('/api/instagram/publish', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: `Post ${selectedPostType.toUpperCase()}`,
-          caption: customCaption,
-          hashtags: ['#GlossyUberlandia', '#ModaFitness', '#RevendedoraOficial'],
-          type: selectedPostType,
-          syncToVip: syncToVipToggle,
-        }),
-      });
-      const data = await res.json();
-      setPublishSuccessMessage(data.message);
-
-      const newPost: ContentPost = {
-        id: `post-${Date.now()}`,
-        title: `Post ${selectedPostType.toUpperCase()}`,
-        type: selectedPostType,
-        productName: inventory[selectedProductIndex]?.name || 'Peça Glossy',
-        productColor: inventory[selectedProductIndex]?.color || 'Cores',
-        price: inventory[selectedProductIndex]?.price,
-        caption: customCaption,
-        hashtags: ['#GlossyUberlandia', '#ModaFitness'],
-        status: 'publicado',
-        syncToVip: syncToVipToggle,
-      };
-      setPosts((prev) => [newPost, ...prev]);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // Girar Sorteio
-  const handleSpinRaffle = () => {
-    setIsSpinning(true);
-    setRaffleWinner(null);
-    setTimeout(() => {
-      const candidates = [
-        'Camila Alencar (Morada da Colina)',
-        'Dra. Fernanda Resende (Granja Marileusa)',
-        'Patrícia Borges (Santa Mônica)',
-        'Juliana Castro (Jardim Karaíba)',
-        'Renata Silveira (Altamira)',
-        'Mariana Freitas (Centro Uberlândia)',
-      ];
-      const winner = candidates[Math.floor(Math.random() * candidates.length)];
-      setRaffleWinner(winner);
-      setIsSpinning(false);
-    }, 2000);
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-      {/* Topbar Luxury */}
-      <header className="border-b border-rose-950/40 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-amber-600 via-rose-500 to-amber-300 p-0.5 shadow-lg shadow-rose-950/50">
-              <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-                <span className="font-serif font-black text-xl tracking-wider text-rose-300">G</span>
-              </div>
+  // ----------------------------------------------------
+  // TELA DE LOGIN (Garantia de Padrão e Autenticação)
+  // ----------------------------------------------------
+  if (!isAuthenticated) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center p-4 transition-colors ${
+        isDarkMode ? 'bg-zinc-950 text-zinc-100' : 'bg-gradient-to-br from-[#faf8f6] via-[#f7f2ed] to-[#f4ebe1] text-zinc-900'
+      }`}>
+        <div className={`w-full max-w-md p-8 rounded-3xl shadow-2xl border transition-all ${
+          isDarkMode ? 'bg-zinc-900/90 border-zinc-800' : 'bg-white/95 border-amber-100/80'
+        }`}>
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-rose-400 via-rose-500 to-amber-400 text-white shadow-lg shadow-rose-500/20 mb-4 text-3xl">
+              🦩
             </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-rose-200 via-rose-300 to-amber-200 bg-clip-text text-transparent">
-                  GLOSSY LUANA
-                </h1>
-                <span className="px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase rounded-full bg-rose-500/10 text-rose-300 border border-rose-500/20">
-                  Uberlândia
-                </span>
-              </div>
-              <p className="text-xs text-slate-400">Sistema Centralizado de Gestão, CRM & Automação IA</p>
-            </div>
+            <h1 className="text-2xl font-serif font-bold tracking-tight text-zinc-900 dark:text-white">
+              GLOSSY
+            </h1>
+            <p className="text-xs tracking-widest uppercase font-semibold text-rose-600 dark:text-rose-400 mt-0.5">
+              BY LUANA FRIAS • UBERLÂNDIA
+            </p>
+            <p className="text-xs text-zinc-500 mt-2">
+              Painel Integrado de Gestão & CRM Omnichannel • Vértice Tecnologia
+            </p>
           </div>
 
-          {/* Status Pills */}
-          <div className="hidden lg:flex items-center space-x-3 text-xs">
-            <div className="flex items-center space-x-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>WhatsApp Comercial: (34) 99300-2424</span>
+          <form onSubmit={handleLogin} className="space-y-4">
+            {loginError && (
+              <div className="p-3 text-xs rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 border border-rose-200">
+                {loginError}
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                E-mail ou Usuário
+              </label>
+              <input
+                type="text"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                className={`w-full px-4 py-2.5 rounded-xl text-sm border focus:outline-none focus:ring-2 focus:ring-rose-500 transition-all ${
+                  isDarkMode
+                    ? 'bg-zinc-800 border-zinc-700 text-white'
+                    : 'bg-zinc-50/70 border-zinc-200 text-zinc-900'
+                }`}
+                placeholder="luana@glossyluanaudia.com.br"
+                required
+              />
             </div>
-            <div className="flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20">
-              <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-              <span>Instagram: @glossyluanaudia (Pendente senha)</span>
+
+            <div>
+              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                Senha de Acesso
+              </label>
+              <input
+                type="password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                className={`w-full px-4 py-2.5 rounded-xl text-sm border focus:outline-none focus:ring-2 focus:ring-rose-500 transition-all ${
+                  isDarkMode
+                    ? 'bg-zinc-800 border-zinc-700 text-white'
+                    : 'bg-zinc-50/70 border-zinc-200 text-zinc-900'
+                }`}
+                placeholder="••••••••"
+                required
+              />
             </div>
-            <div className="flex items-center space-x-1.5 px-3 py-1 rounded-full bg-rose-500/10 text-rose-300 border border-rose-500/20">
-              <Bot className="w-3.5 h-3.5" />
-              <span>Glossy IA: Ativa (Simulador / OpenRouter)</span>
-            </div>
+
+            <button
+              type="submit"
+              className="w-full py-3 px-4 rounded-xl font-medium text-sm text-white bg-gradient-to-r from-rose-500 via-rose-600 to-amber-500 hover:from-rose-600 hover:to-amber-600 shadow-md shadow-rose-500/25 transition-all transform active:scale-[0.99]"
+            >
+              Acessar Painel Oficial
+            </button>
+          </form>
+
+          <div className="mt-6 pt-6 border-t border-zinc-100 dark:border-zinc-800 text-center">
+            <button
+              onClick={() => {
+                setLoginEmail('luana@glossyluanaudia.com.br');
+                setLoginPassword('Glossylu@24');
+                setIsAuthenticated(true);
+              }}
+              className="text-xs font-medium text-rose-600 dark:text-rose-400 hover:underline"
+            >
+              ⚡ Login Rápido: Entrar como Luana Frias (Uberlândia)
+            </button>
           </div>
         </div>
+      </div>
+    );
+  }
 
-        {/* Tab Navigation */}
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-1 overflow-x-auto pb-2 scrollbar-none">
-          {[
-            { id: 'overview', label: 'Visão Geral', icon: TrendingUp },
-            { id: 'inventory', label: 'Estoque Real', icon: Layers, badge: `${stats.totalPieces} pcs` },
-            { id: 'crm', label: 'CRM & Pedidos', icon: Users, badge: `${leads.length}` },
-            { id: 'agent', label: 'Agente IA WhatsApp', icon: Bot, highlight: true },
-            { id: 'content', label: 'Criador Instagram & VIP', icon: Camera },
-            { id: 'loyalty', label: 'Clube VIP & Sorteios', icon: Gift },
-            { id: 'catalogs', label: 'Catálogos & Drive', icon: FolderOpen },
-            { id: 'settings', label: 'Integrações & Homologação', icon: Settings },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center space-x-2 px-3.5 py-2 text-xs font-medium rounded-lg whitespace-nowrap transition-all ${
-                  isActive
-                    ? 'bg-rose-500 text-white shadow-md shadow-rose-950/50'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${tab.highlight && !isActive ? 'text-rose-400' : ''}`} />
-                <span>{tab.label}</span>
-                {tab.badge && (
-                  <span
-                    className={`ml-1.5 px-1.5 py-0.5 text-[10px] font-semibold rounded-full ${
-                      isActive ? 'bg-rose-700 text-rose-100' : 'bg-slate-800 text-slate-400'
-                    }`}
-                  >
-                    {tab.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </nav>
-      </header>
+  // ----------------------------------------------------
+  // LAYOUT PRINCIPAL: MENU LATERAL (VERTICAL SIDEBAR) + ÁREA DE CONTEÚDO
+  // ----------------------------------------------------
+  return (
+    <div className={`min-h-screen flex ${isDarkMode ? 'dark bg-zinc-950 text-zinc-100' : 'bg-[#faf8f6] text-zinc-900'}`}>
+      
+      {/* Toast Notification Flutuante */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl bg-zinc-900/95 text-white shadow-2xl backdrop-blur-md border border-zinc-800 animate-slide-up text-sm font-medium">
+          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
 
-      {/* Main Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* TAB 1: VISÃO GERAL */}
-        {activeTab === 'overview' && (
-          <div className="space-y-6">
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 shadow-sm relative overflow-hidden">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-xs font-medium text-slate-400">Total de Peças em Estoque</p>
-                    <p className="text-3xl font-extrabold text-white mt-2">{stats.totalPieces}</p>
-                    <p className="text-xs text-rose-400 mt-1">Físico em Uberlândia</p>
-                  </div>
-                  <div className="p-3 rounded-xl bg-rose-500/10 text-rose-400">
-                    <Layers className="w-6 h-6" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 shadow-sm relative overflow-hidden">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-xs font-medium text-slate-400">Valor Estimado do Estoque</p>
-                    <p className="text-3xl font-extrabold text-white mt-2">
-                      R$ {stats.totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </p>
-                    <p className="text-xs text-emerald-400 mt-1">Preço de Venda Final</p>
-                  </div>
-                  <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400">
-                    <DollarSign className="w-6 h-6" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 shadow-sm relative overflow-hidden">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-xs font-medium text-slate-400">Lote Black Friday / Promoção</p>
-                    <p className="text-3xl font-extrabold text-amber-300 mt-2">{stats.bfPieces} peças</p>
-                    <p className="text-xs text-amber-400 mt-1">Prontas para Queima</p>
-                  </div>
-                  <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400">
-                    <Tag className="w-6 h-6" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 shadow-sm relative overflow-hidden">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-xs font-medium text-slate-400">Atendimentos no Funil CRM</p>
-                    <p className="text-3xl font-extrabold text-white mt-2">{leads.length}</p>
-                    <p className="text-xs text-slate-400 mt-1">Clientes ativas em Uberlândia</p>
-                  </div>
-                  <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400">
-                    <Users className="w-6 h-6" />
-                  </div>
-                </div>
-              </div>
+      {/* -------------------------------------------------- */}
+      {/* 1. SIDEBAR VERTICAL (MENU LATERAL FIXO) */}
+      {/* -------------------------------------------------- */}
+      <aside className={`w-72 shrink-0 border-r flex flex-col justify-between transition-colors z-30 ${
+        isDarkMode ? 'bg-zinc-900/90 border-zinc-800' : 'bg-white border-rose-100/70 shadow-sm'
+      }`}>
+        
+        {/* Topo do Menu Lateral */}
+        <div className="p-5">
+          {/* Logo Brand Oficial com Flamingo */}
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-rose-400 via-rose-500 to-amber-400 flex items-center justify-center text-white shadow-md shadow-rose-500/20 text-2xl shrink-0">
+              🦩
             </div>
-
-            {/* Quick Actions & Reposição Banner */}
-            <div className="p-6 rounded-2xl bg-gradient-to-r from-rose-950/40 via-slate-900 to-slate-900 border border-rose-900/30 flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="space-y-1">
-                <div className="flex items-center space-x-2">
-                  <Sparkles className="w-5 h-5 text-rose-400" />
-                  <h3 className="text-base font-bold text-white">Próximo Pedido Quinzenal de Goiânia</h3>
-                </div>
-                <p className="text-xs text-slate-400 max-w-2xl">
-                  {stats.lowStockItems} itens estão com apenas 1 peça em estoque. Use o sistema para registrar pedidos de reposição rápida das cores permanentes (Café, Cookie, Preta e Acrópole) sem risco de desabastecimento.
-                </p>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => setActiveTab('inventory')}
-                  className="px-4 py-2 text-xs font-semibold rounded-lg bg-rose-600 hover:bg-rose-500 text-white transition-all shadow-md shadow-rose-950/40"
-                >
-                  Conferir Peças em Alerta
-                </button>
-                <button
-                  onClick={() => setActiveTab('agent')}
-                  className="px-4 py-2 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-rose-300 border border-rose-500/20 transition-all"
-                >
-                  Testar Agente WhatsApp
-                </button>
-              </div>
-            </div>
-
-            {/* Grid: Leads Recentes e Postagens */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Card Leads Recentes */}
-              <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-sm font-bold text-white flex items-center space-x-2">
-                    <Users className="w-4 h-4 text-rose-400" />
-                    <span>Últimos Atendimentos & Condicionais</span>
-                  </h4>
-                  <button
-                    onClick={() => setActiveTab('crm')}
-                    className="text-xs text-rose-400 hover:underline"
-                  >
-                    Ver todos no CRM →
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  {leads.slice(0, 3).map((lead) => (
-                    <div
-                      key={lead.id}
-                      className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between"
-                    >
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <p className="text-xs font-bold text-slate-200">{lead.name}</p>
-                          <span
-                            className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                              lead.status === 'condicional_enviado'
-                                ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
-                                : lead.status === 'venda_concluida'
-                                ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
-                                : 'bg-slate-800 text-slate-300'
-                            }`}
-                          >
-                            {lead.status === 'condicional_enviado'
-                              ? 'Condicional Enviado'
-                              : lead.status === 'venda_concluida'
-                              ? 'Venda Concluída'
-                              : 'Em Atendimento'}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-slate-400 mt-1">
-                          {lead.neighborhood} • Tamanho {lead.sizeInterest}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs font-semibold text-rose-300">
-                          R$ {lead.totalValue?.toFixed(2) || '0.00'}
-                        </p>
-                        <p className="text-[10px] text-slate-500">{lead.lastContact}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Card Publicações Ativas */}
-              <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-sm font-bold text-white flex items-center space-x-2">
-                    <Camera className="w-4 h-4 text-rose-400" />
-                    <span>Fluxo de Conteúdo para Redes Sociais</span>
-                  </h4>
-                  <button
-                    onClick={() => setActiveTab('content')}
-                    className="text-xs text-rose-400 hover:underline"
-                  >
-                    Novo Post com IA →
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  {posts.map((post) => (
-                    <div
-                      key={post.id}
-                      className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between"
-                    >
-                      <div className="max-w-[70%]">
-                        <div className="flex items-center space-x-2">
-                          <span
-                            className={`text-[9px] px-2 py-0.5 rounded uppercase font-bold tracking-wider ${
-                              post.type === 'comercial'
-                                ? 'bg-emerald-500/10 text-emerald-400'
-                                : post.type === 'lifestyle'
-                                ? 'bg-amber-500/10 text-amber-400'
-                                : 'bg-rose-500/10 text-rose-400'
-                            }`}
-                          >
-                            {post.type}
-                          </span>
-                          <p className="text-xs font-semibold text-slate-200 truncate">{post.title}</p>
-                        </div>
-                        <p className="text-[11px] text-slate-400 line-clamp-1 mt-1">{post.caption}</p>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                          {post.status === 'publicado' ? 'Publicado' : 'Pronto'}
-                        </span>
-                        {post.syncToVip && (
-                          <p className="text-[10px] text-rose-300 mt-1">✓ Sincronizado VIP</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            <div>
+              <h2 className="font-serif font-black text-lg tracking-wider text-zinc-900 dark:text-white leading-none">
+                GLOSSY
+              </h2>
+              <p className="text-[10px] uppercase font-bold tracking-widest text-rose-600 dark:text-rose-400 mt-0.5">
+                BY LUANA FRIAS
+              </p>
+              <span className="text-[9px] text-zinc-400 font-medium">Uberlândia • MG</span>
             </div>
           </div>
-        )}
 
-        {/* TAB 2: CONTROLE DE ESTOQUE REAL */}
-        {activeTab === 'inventory' && (
-          <div className="space-y-6">
-            {/* Header com Filtros */}
-            <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-base font-bold text-white flex items-center space-x-2">
-                    <Layers className="w-5 h-5 text-rose-400" />
-                    <span>Inventário Físico Completo — Uberlândia</span>
-                  </h3>
-                  <p className="text-xs text-slate-400">
-                    Controle de peças em tempo real: Leggings, Tops, Croppeds, Bermudas, T-Shirts, Regatas e Macacões.
+          {/* Card do Usuário Logado (Foto da Luana) */}
+          <div className={`p-3 rounded-2xl border mb-6 flex items-center gap-3 ${
+            isDarkMode ? 'bg-zinc-800/60 border-zinc-700/60' : 'bg-rose-50/50 border-rose-100'
+          }`}>
+            <div className="relative w-11 h-11 rounded-full overflow-hidden border-2 border-rose-300 dark:border-rose-500/50 shrink-0">
+              <Image
+                src="/luana.png"
+                alt="Luana Frias"
+                fill
+                className="object-cover"
+                priority
+              />
+              <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-zinc-900" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold truncate text-zinc-900 dark:text-white">
+                Luana Frias
+              </p>
+              <p className="text-[10px] text-rose-600 dark:text-rose-400 font-medium truncate">
+                Revendedora Master
+              </p>
+              <p className="text-[9px] text-zinc-400 truncate">
+                +55 (34) 99300-2424
+              </p>
+            </div>
+          </div>
+
+          {/* Links do Menu Vertical */}
+          <nav className="space-y-1">
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                activeTab === 'overview'
+                  ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-md shadow-rose-500/20'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:bg-rose-50/70 dark:hover:bg-zinc-800/60'
+              }`}
+            >
+              <BarChart3 className="w-4 h-4 shrink-0" />
+              <span className="flex-1 text-left">Visão Geral & Métricas</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('crm')}
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                activeTab === 'crm'
+                  ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-md shadow-rose-500/20'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:bg-rose-50/70 dark:hover:bg-zinc-800/60'
+              }`}
+            >
+              <MessageSquare className="w-4 h-4 shrink-0" />
+              <span className="flex-1 text-left">CRM Omnichannel</span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                activeTab === 'crm' ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-400'
+              }`}>
+                {conversations.filter(c => c.queue === 'aguardando').length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('inventory')}
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                activeTab === 'inventory'
+                  ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-md shadow-rose-500/20'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:bg-rose-50/70 dark:hover:bg-zinc-800/60'
+              }`}
+            >
+              <ShoppingBag className="w-4 h-4 shrink-0" />
+              <span className="flex-1 text-left">Estoque Revisado (7 Pág.)</span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                activeTab === 'inventory' ? 'bg-white/20 text-white' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500'
+              }`}>
+                {stockMetrics.totalPieces}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('posts')}
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                activeTab === 'posts'
+                  ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-md shadow-rose-500/20'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:bg-rose-50/70 dark:hover:bg-zinc-800/60'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 shrink-0" />
+              <span className="flex-1 text-left">Postagens & n8n</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('vip_group')}
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                activeTab === 'vip_group'
+                  ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-md shadow-rose-500/20'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:bg-rose-50/70 dark:hover:bg-zinc-800/60'
+              }`}
+            >
+              <MessageCircle className="w-4 h-4 shrink-0" />
+              <span className="flex-1 text-left">Grupo VIP Select</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            </button>
+
+            <button
+              onClick={() => setActiveTab('linktree')}
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                activeTab === 'linktree'
+                  ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-md shadow-rose-500/20'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:bg-rose-50/70 dark:hover:bg-zinc-800/60'
+              }`}
+            >
+              <Share2 className="w-4 h-4 shrink-0" />
+              <span className="flex-1 text-left">Linktree & Perfil</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('channels')}
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                activeTab === 'channels'
+                  ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-md shadow-rose-500/20'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:bg-rose-50/70 dark:hover:bg-zinc-800/60'
+              }`}
+            >
+              <QrCode className="w-4 h-4 shrink-0" />
+              <span className="flex-1 text-left">Canais & QR Code</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            </button>
+
+            <button
+              onClick={() => setActiveTab('loyalty')}
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                activeTab === 'loyalty'
+                  ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-md shadow-rose-500/20'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:bg-rose-50/70 dark:hover:bg-zinc-800/60'
+              }`}
+            >
+              <Flame className="w-4 h-4 shrink-0" />
+              <span className="flex-1 text-left">Clube VIP & Sorteios</span>
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400">
+                Em breve
+              </span>
+            </button>
+          </nav>
+        </div>
+
+        {/* Rodapé do Menu Lateral */}
+        <div className="p-4 border-t border-zinc-100 dark:border-zinc-800 space-y-2">
+          {/* Theme Toggle (Light / Dark) */}
+          <button
+            onClick={() => setIsDarkMode(!isDarkMode)}
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+              isDarkMode ? 'bg-zinc-800 text-zinc-300' : 'bg-rose-50 text-rose-800'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              {isDarkMode ? <Moon className="w-3.5 h-3.5 text-amber-400" /> : <Sun className="w-3.5 h-3.5 text-amber-500" />}
+              {isDarkMode ? 'Modo Escuro Ativo' : 'Modo Claro Luxo'}
+            </span>
+            <span className="text-[10px] text-zinc-400">Alternar</span>
+          </button>
+
+          {/* Sair do Sistema */}
+          <button
+            onClick={() => {
+              setIsAuthenticated(false);
+              showToast('Você saiu do sistema.');
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-zinc-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-zinc-800 transition-all"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Sair da Conta</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* -------------------------------------------------- */}
+      {/* 2. ÁREA DE CONTEÚDO PRINCIPAL (MAIN CONTENT) */}
+      {/* -------------------------------------------------- */}
+      <main className="flex-1 flex flex-col overflow-hidden">
+        
+        {/* Topbar Superior */}
+        <header className={`h-16 px-6 border-b flex items-center justify-between shrink-0 transition-colors ${
+          isDarkMode ? 'bg-zinc-900/60 border-zinc-800' : 'bg-white/80 border-rose-100/60 backdrop-blur-md'
+        }`}>
+          <div>
+            <h1 className="text-sm font-bold text-zinc-900 dark:text-white capitalize">
+              {activeTab === 'overview' && 'Painel de Controle Executivo'}
+              {activeTab === 'crm' && 'CRM Omnichannel • Padrão Vértice 3 Colunas'}
+              {activeTab === 'inventory' && 'Estoque Físico Revisado • Uberlândia (7 Páginas)'}
+              {activeTab === 'posts' && 'Criador de Conteúdo & Postagens • Painel tipo Daiane'}
+              {activeTab === 'vip_group' && 'Grupo VIP Select • Modelo Renata Sousa'}
+              {activeTab === 'linktree' && 'Gerador de Linktree & Foto de Perfil Glossy'}
+              {activeTab === 'channels' && 'Conexão de Canais • WhatsApp Web Oficial'}
+              {activeTab === 'loyalty' && 'Clube de Fidelidade & Sorteios'}
+            </h1>
+            <p className="text-[11px] text-zinc-400">
+              Operação Uberlândia • Luana Frias & Marcus Zago
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              WhatsApp Oficial Conectado
+            </span>
+
+            <a
+              href="https://instagram.com/glossyluanaudia"
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs font-medium text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1"
+            >
+              @glossyluanaudia
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+        </header>
+
+        {/* Corpo do Conteúdo Dinâmico conforme a Aba */}
+        <div className="flex-1 overflow-y-auto">
+
+          {/* ============================================== */}
+          {/* ABA 1: VISÃO GERAL & MÉTRICAS (OVERVIEW) */}
+          {/* ============================================== */}
+          {activeTab === 'overview' && (
+            <div className="p-6 space-y-6 max-w-7xl mx-auto">
+              {/* Banner de Boas-vindas Delicado e Elegante */}
+              <div className={`p-6 rounded-3xl border relative overflow-hidden ${
+                isDarkMode
+                  ? 'bg-gradient-to-r from-zinc-900 via-zinc-900 to-rose-950/40 border-zinc-800'
+                  : 'bg-gradient-to-r from-rose-50/80 via-amber-50/60 to-white border-rose-100 shadow-sm'
+              }`}>
+                <div className="max-w-2xl">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 mb-3">
+                    ✨ OPERAÇÃO OFICIAL ATIVA • UBERLÂNDIA
+                  </div>
+                  <h2 className="text-xl font-serif font-bold text-zinc-900 dark:text-white">
+                    Olá Luana, tudo pronto para acelerar as vendas da Glossy hoje!
+                  </h2>
+                  <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-2 leading-relaxed">
+                    Seu ecossistema está integrado com o WhatsApp oficial <strong>(34) 99300-2424</strong>, o estoque físico de 112 peças revisadas, o agendador de postagens da Daiane e o Grupo VIP Select.
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setActiveTab('crm')}
+                      className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-rose-500 hover:bg-rose-600 shadow-md shadow-rose-500/20 transition-all"
+                    >
+                      Abrir CRM Omnichannel ({conversations.filter(c => c.queue === 'aguardando').length} na Fila)
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('inventory')}
+                      className={`px-4 py-2 rounded-xl text-xs font-semibold border transition-all ${
+                        isDarkMode
+                          ? 'border-zinc-700 hover:bg-zinc-800 text-zinc-300'
+                          : 'border-rose-200 hover:bg-rose-50 text-rose-800'
+                      }`}
+                    >
+                      Consultar Estoque (112 Peças)
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Grid de 4 Cards de Métricas Principais */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className={`p-5 rounded-2xl border ${isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-rose-100/70 shadow-sm'}`}>
+                  <div className="flex items-center justify-between text-zinc-400 mb-3">
+                    <span className="text-xs font-medium">Estoque Físico UDI</span>
+                    <ShoppingBag className="w-4 h-4 text-rose-500" />
+                  </div>
+                  <div className="text-2xl font-bold text-zinc-900 dark:text-white">
+                    {stockMetrics.totalPieces} <span className="text-xs font-normal text-zinc-400">peças</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-500 mt-1">
+                    Avaliado em R$ {stockMetrics.totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
 
-                <div className="flex items-center space-x-3">
-                  <div className="relative">
-                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                    <input
-                      type="text"
-                      placeholder="Buscar peça, cor ou modelo..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-9 pr-4 py-2 text-xs rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 w-64"
-                    />
+                <div className={`p-5 rounded-2xl border ${isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-rose-100/70 shadow-sm'}`}>
+                  <div className="flex items-center justify-between text-zinc-400 mb-3">
+                    <span className="text-xs font-medium">Condicionais Ativas</span>
+                    <Truck className="w-4 h-4 text-amber-500" />
                   </div>
+                  <div className="text-2xl font-bold text-zinc-900 dark:text-white">
+                    1 <span className="text-xs font-normal text-zinc-400">malinha</span>
+                  </div>
+                  <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium mt-1">
+                    Camila Alencar • R$ 509,70 em prova
+                  </p>
+                </div>
+
+                <div className={`p-5 rounded-2xl border ${isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-rose-100/70 shadow-sm'}`}>
+                  <div className="flex items-center justify-between text-zinc-400 mb-3">
+                    <span className="text-xs font-medium">Membros Grupo VIP</span>
+                    <Users className="w-4 h-4 text-emerald-500" />
+                  </div>
+                  <div className="text-2xl font-bold text-zinc-900 dark:text-white">
+                    1.042 <span className="text-xs font-normal text-zinc-400">clientes</span>
+                  </div>
+                  <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1">
+                    Grupo silencioso de alta conversão
+                  </p>
+                </div>
+
+                <div className={`p-5 rounded-2xl border ${isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-rose-100/70 shadow-sm'}`}>
+                  <div className="flex items-center justify-between text-zinc-400 mb-3">
+                    <span className="text-xs font-medium">Posts Programados</span>
+                    <Calendar className="w-4 h-4 text-purple-500" />
+                  </div>
+                  <div className="text-2xl font-bold text-zinc-900 dark:text-white">
+                    3 <span className="text-xs font-normal text-zinc-400">esta semana</span>
+                  </div>
+                  <p className="text-[11px] text-purple-600 dark:text-purple-400 font-medium mt-1">
+                    Feed + Stories + Espelho VIP
+                  </p>
                 </div>
               </div>
 
-              {/* Filtros em linha */}
-              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-800/60">
-                <span className="text-xs font-medium text-slate-400 mr-2">Categoria:</span>
-                {[
-                  'Todas',
-                  'Leggings',
-                  'Tops',
-                  'Croppeds',
-                  'Bermudas e Shorts',
-                  'T-Shirts',
-                  'Regatas',
-                  'Macacões e Conjuntos',
-                ].map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
-                      selectedCategory === cat
-                        ? 'bg-rose-500 text-white'
-                        : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
-
-                <span className="text-xs font-medium text-slate-400 ml-4 mr-2">Tamanho:</span>
-                {['Todos', 'PP', 'P', 'M', 'G', 'GG', 'Único'].map((sz) => (
-                  <button
-                    key={sz}
-                    onClick={() => setSelectedSize(sz)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
-                      selectedSize === sz
-                        ? 'bg-amber-500 text-slate-950 font-bold'
-                        : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
-                    }`}
-                  >
-                    {sz}
-                  </button>
-                ))}
-
-                <button
-                  onClick={() => setShowBlackFridayOnly(!showBlackFridayOnly)}
-                  className={`ml-auto px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 ${
-                    showBlackFridayOnly
-                      ? 'bg-amber-500 text-slate-950'
-                      : 'bg-slate-950 text-amber-400 border border-amber-500/30'
-                  }`}
-                >
-                  <Tag className="w-3.5 h-3.5" />
-                  <span>Filtrar Black Friday ({stats.bfPieces})</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Tabela de Estoque */}
-            <div className="rounded-2xl bg-slate-900/60 border border-slate-800/80 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-950/80 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
-                    <tr>
-                      <th className="py-3 px-4">Peça / Modelo</th>
-                      <th className="py-3 px-4">Categoria</th>
-                      <th className="py-3 px-4">Tamanho</th>
-                      <th className="py-3 px-4">Cor</th>
-                      <th className="py-3 px-4 text-center">Quantidade</th>
-                      <th className="py-3 px-4">Preço Venda</th>
-                      <th className="py-3 px-4">Status / Destaque</th>
-                      <th className="py-3 px-4 text-right">Ações Rápidas</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/60">
-                    {filteredInventory.map((item) => (
-                      <tr key={item.id} className="hover:bg-slate-800/30 transition-colors">
-                        <td className="py-3 px-4 font-semibold text-white">
-                          {item.name}
-                          {item.notes && (
-                            <span className="block text-[10px] font-normal text-slate-400">
-                              {item.notes}
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-3 px-4 text-slate-400">{item.category}</td>
-                        <td className="py-3 px-4">
-                          <span className="px-2 py-0.5 rounded bg-slate-800 font-bold text-slate-200">
-                            {item.size}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-slate-200 font-medium">{item.color}</td>
-                        <td className="py-3 px-4 text-center">
-                          <div className="inline-flex items-center space-x-2 bg-slate-950 px-2 py-1 rounded-lg border border-slate-800">
-                            <button
-                              onClick={() => handleQuantityChange(item.id, -1)}
-                              className="text-slate-400 hover:text-rose-400 text-sm font-bold w-4 h-4 flex items-center justify-center"
-                            >
-                              -
-                            </button>
-                            <span
-                              className={`font-bold ${
-                                item.quantity === 0
-                                  ? 'text-rose-400'
-                                  : item.quantity === 1
-                                  ? 'text-amber-300'
-                                  : 'text-white'
-                              }`}
-                            >
-                              {item.quantity}
-                            </span>
-                            <button
-                              onClick={() => handleQuantityChange(item.id, 1)}
-                              className="text-slate-400 hover:text-emerald-400 text-sm font-bold w-4 h-4 flex items-center justify-center"
-                            >
-                              +
-                            </button>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 font-bold text-rose-300">
-                          R$ {item.price.toFixed(2)}
-                        </td>
-                        <td className="py-3 px-4">
-                          {item.isBlackFriday && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-300 border border-amber-500/30 mr-1.5">
-                              Black Friday 🔥
-                            </span>
-                          )}
-                          {item.isLimitedEdition && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-500/10 text-rose-300 border border-rose-500/20 mr-1.5">
-                              Ed. Limitada
-                            </span>
-                          )}
-                          {item.isLastPiece && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-purple-500/10 text-purple-300 border border-purple-500/20">
-                              Última Peça
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-3 px-4 text-right space-x-2">
-                          <button
-                            disabled={item.quantity <= 0}
-                            onClick={() => handleRegisterSale(item)}
-                            className="px-2.5 py-1 rounded text-[11px] font-semibold bg-emerald-600/80 hover:bg-emerald-500 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                            title="Dar baixa por venda realizada"
-                          >
-                            Vender
-                          </button>
-                          <button
-                            disabled={item.quantity <= 0}
-                            onClick={() => setCondicionalModalItem(item)}
-                            className="px-2.5 py-1 rounded text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                            title="Separar malinha condicional para cliente"
-                          >
-                            Condicional
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Modal de Condicional */}
-            {condicionalModalItem && (
-              <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h4 className="text-base font-bold text-white flex items-center space-x-2">
-                      <Truck className="w-5 h-5 text-amber-400" />
-                      <span>Separar Malinha Condicional</span>
-                    </h4>
-                    <button
-                      onClick={() => setCondicionalModalItem(null)}
-                      className="text-slate-400 hover:text-white text-sm"
-                    >
-                      ✕
-                    </button>
+              {/* Destaques Rápidos: Condicional em Aberto & Últimas Peças */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                {/* Card 1: Condicional Ativa no Morada da Colina */}
+                <div className={`p-6 rounded-3xl border ${isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-rose-100/70 shadow-sm'}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Truck className="w-4 h-4 text-rose-500" />
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white">
+                        Malinha Condicional em Análise
+                      </h3>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400">
+                      Retorno: Amanhã às 14h
+                    </span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-1">
-                    <p className="font-semibold text-rose-300">
-                      {condicionalModalItem.name} — {condicionalModalItem.color} ({condicionalModalItem.size})
-                    </p>
-                    <p className="text-slate-400">Valor da peça: R$ {condicionalModalItem.price.toFixed(2)}</p>
+                  <div className="flex items-center gap-3 p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-800/60 mb-4">
+                    <div className="w-10 h-10 rounded-full overflow-hidden relative">
+                      <Image
+                        src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
+                        alt="Camila Alencar"
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-zinc-900 dark:text-white">Camila Alencar</p>
+                      <p className="text-[11px] text-zinc-500">Bairro: Morada da Colina • Uberlândia</p>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-2">
+                    Peças na Malinha:
+                  </p>
+                  <ul className="space-y-1.5 text-xs text-zinc-600 dark:text-zinc-400 mb-4">
+                    <li className="flex items-center justify-between">
+                      <span>• Legging Tradicional M (Cookie)</span>
+                      <span className="font-semibold text-zinc-900 dark:text-white">R$ 189,90</span>
+                    </li>
+                    <li className="flex items-center justify-between">
+                      <span>• Legging Tradicional M (Café)</span>
+                      <span className="font-semibold text-zinc-900 dark:text-white">R$ 189,90</span>
+                    </li>
+                    <li className="flex items-center justify-between">
+                      <span>• Top Live M (Acrópole)</span>
+                      <span className="font-semibold text-zinc-900 dark:text-white">R$ 129,90</span>
+                    </li>
+                  </ul>
+
+                  <button
+                    onClick={() => {
+                      setSelectedConversationId('conv-1');
+                      setActiveTab('crm');
+                    }}
+                    className="w-full py-2.5 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 transition-all flex items-center justify-center gap-2"
+                  >
+                    <span>Abrir Chat com Camila no CRM</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {/* Card 2: Peças Exclusivas / Últimas Unidades */}
+                <div className={`p-6 rounded-3xl border ${isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-rose-100/70 shadow-sm'}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Flame className="w-4 h-4 text-amber-500" />
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white">
+                        Peças Raras & Última Unidade
+                      </h3>
+                    </div>
+                    <span className="text-[11px] text-zinc-400">Pronta-Entrega</span>
                   </div>
 
                   <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-300 mb-1">
-                        Nome da Cliente:
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Ex: Dra. Juliana"
-                        value={condicionalClientName}
-                        onChange={(e) => setCondicionalClientName(e.target.value)}
-                        className="w-full px-3 py-2 text-xs rounded-lg bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-rose-500"
-                      />
+                    <div className="flex items-center justify-between p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-800/60">
+                      <div>
+                        <p className="text-xs font-bold text-zinc-900 dark:text-white">Legging Wave M</p>
+                        <p className="text-[11px] text-zinc-500">Cor: Amarelo-manteiga • Peça Única</p>
+                      </div>
+                      <span className="text-xs font-bold text-rose-600 dark:text-rose-400">R$ 219,90</span>
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-medium text-slate-300 mb-1">
-                        Bairro em Uberlândia:
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Ex: Morada da Colina, Granja Marileusa..."
-                        value={condicionalNeighborhood}
-                        onChange={(e) => setCondicionalNeighborhood(e.target.value)}
-                        className="w-full px-3 py-2 text-xs rounded-lg bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-rose-500"
-                      />
+                    <div className="flex items-center justify-between p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-800/60">
+                      <div>
+                        <p className="text-xs font-bold text-zinc-900 dark:text-white">Macacão Longo M</p>
+                        <p className="text-[11px] text-zinc-500">Cor: Barolo Acetinado • Peça Única</p>
+                      </div>
+                      <span className="text-xs font-bold text-rose-600 dark:text-rose-400">R$ 279,90</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-800/60">
+                      <div>
+                        <p className="text-xs font-bold text-zinc-900 dark:text-white">Conjunto Gaia BF (Casaco M + Short P)</p>
+                        <p className="text-[11px] text-zinc-500">Cor: Cocada • Lote Black Friday</p>
+                      </div>
+                      <span className="text-xs font-bold text-rose-600 dark:text-rose-400">R$ 299,90</span>
                     </div>
                   </div>
 
-                  <div className="flex justify-end space-x-2 pt-2">
+                  <button
+                    onClick={() => setActiveTab('inventory')}
+                    className="w-full mt-4 py-2.5 rounded-xl text-xs font-semibold text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all flex items-center justify-center gap-2"
+                  >
+                    <span>Ver Tabela Completa de Estoque</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {/* ============================================== */}
+          {/* ABA 2: CRM OMNICHANNEL (PADRÃO VÉRTICE 3 COLUNAS) */}
+          {/* ============================================== */}
+          {activeTab === 'crm' && (
+            <div className="h-[calc(100vh-4rem)] flex overflow-hidden">
+              
+              {/* COLUNA 1: FILAS DE ATENDIMENTO (INBOX) */}
+              <div className={`w-80 shrink-0 border-r flex flex-col transition-colors ${
+                isDarkMode ? 'bg-zinc-900/40 border-zinc-800' : 'bg-white border-rose-100/70'
+              }`}>
+                {/* Abas das 4 Filas Canônicas */}
+                <div className="p-3 border-b border-zinc-100 dark:border-zinc-800">
+                  <div className="grid grid-cols-4 gap-1 p-1 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 text-[11px] font-semibold">
                     <button
-                      onClick={() => setCondicionalModalItem(null)}
-                      className="px-4 py-2 text-xs font-medium rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700"
+                      onClick={() => setActiveQueue('aguardando')}
+                      className={`py-1.5 rounded-lg transition-all ${
+                        activeQueue === 'aguardando'
+                          ? 'bg-white dark:bg-zinc-700 text-rose-600 dark:text-rose-400 shadow-sm'
+                          : 'text-zinc-500 hover:text-zinc-800'
+                      }`}
                     >
-                      Cancelar
+                      Fila ({conversations.filter(c => c.queue === 'aguardando').length})
                     </button>
                     <button
-                      onClick={handleConfirmCondicional}
-                      className="px-4 py-2 text-xs font-bold rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950"
+                      onClick={() => setActiveQueue('meus')}
+                      className={`py-1.5 rounded-lg transition-all ${
+                        activeQueue === 'meus'
+                          ? 'bg-white dark:bg-zinc-700 text-rose-600 dark:text-rose-400 shadow-sm'
+                          : 'text-zinc-500 hover:text-zinc-800'
+                      }`}
                     >
-                      Confirmar Saída Condicional
+                      Meus ({conversations.filter(c => c.queue === 'meus').length})
                     </button>
+                    <button
+                      onClick={() => setActiveQueue('espera')}
+                      className={`py-1.5 rounded-lg transition-all ${
+                        activeQueue === 'espera'
+                          ? 'bg-white dark:bg-zinc-700 text-rose-600 dark:text-rose-400 shadow-sm'
+                          : 'text-zinc-500 hover:text-zinc-800'
+                      }`}
+                    >
+                      Espera ({conversations.filter(c => c.queue === 'espera').length})
+                    </button>
+                    <button
+                      onClick={() => setActiveQueue('finalizados')}
+                      className={`py-1.5 rounded-lg transition-all ${
+                        activeQueue === 'finalizados'
+                          ? 'bg-white dark:bg-zinc-700 text-rose-600 dark:text-rose-400 shadow-sm'
+                          : 'text-zinc-500 hover:text-zinc-800'
+                      }`}
+                    >
+                      Feitos ({conversations.filter(c => c.queue === 'finalizados').length})
+                    </button>
+                  </div>
+
+                  {/* Campo de Busca Rápida */}
+                  <div className="relative mt-2.5">
+                    <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                    <input
+                      type="text"
+                      placeholder="Buscar por nome, fone ou bairro..."
+                      value={crmSearchQuery}
+                      onChange={(e) => setCrmSearchQuery(e.target.value)}
+                      className={`w-full pl-8 pr-3 py-1.5 rounded-xl text-xs border focus:outline-none focus:ring-1 focus:ring-rose-500 ${
+                        isDarkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-zinc-50 border-zinc-200'
+                      }`}
+                    />
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
 
-        {/* TAB 3: CRM & PEDIDOS */}
-        {activeTab === 'crm' && (
-          <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <h3 className="text-base font-bold text-white flex items-center space-x-2">
-                  <Users className="w-5 h-5 text-rose-400" />
-                  <span>Funil de Clientes & Vendas — Uberlândia</span>
-                </h3>
-                <p className="text-xs text-slate-400">
-                  Acompanhamento de ponta a ponta: do primeiro contato com a IA até a entrega da malinha condicional e pagamento.
-                </p>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <span className="text-xs text-slate-400">Canal de Contato:</span>
-                <span className="px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 text-xs font-medium border border-emerald-500/20">
-                  WhatsApp Oficial: (34) 99300-2424
-                </span>
-              </div>
-            </div>
-
-            {/* Kanban Columns */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {[
-                { status: 'novo', title: '1. Novo Contato / IA Triando', color: 'border-slate-800 text-slate-400' },
-                { status: 'em_atendimento', title: '2. Em Atendimento', color: 'border-blue-500/30 text-blue-400' },
-                { status: 'condicional_enviado', title: '3. Condicional Enviado', color: 'border-amber-500/30 text-amber-400' },
-                { status: 'venda_concluida', title: '4. Venda Concluída 🎉', color: 'border-emerald-500/30 text-emerald-400' },
-              ].map((col) => {
-                const colLeads = leads.filter((l) => l.status === col.status);
-                return (
-                  <div key={col.status} className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col space-y-3">
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                      <h4 className={`text-xs font-bold uppercase tracking-wider ${col.color}`}>
-                        {col.title}
-                      </h4>
-                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-950 text-slate-300">
-                        {colLeads.length}
-                      </span>
+                {/* Lista de Conversas da Fila */}
+                <div className="flex-1 overflow-y-auto divide-y divide-zinc-100 dark:divide-zinc-800/60">
+                  {filteredConversations.length === 0 ? (
+                    <div className="p-8 text-center text-xs text-zinc-400">
+                      Nenhuma conversa nesta fila.
                     </div>
-
-                    <div className="space-y-3 flex-1">
-                      {colLeads.map((lead) => (
+                  ) : (
+                    filteredConversations.map((conv) => {
+                      const isSelected = conv.id === selectedConversationId;
+                      return (
                         <div
-                          key={lead.id}
-                          className="p-3.5 rounded-xl bg-slate-950 border border-slate-800/80 space-y-2 hover:border-rose-500/40 transition-all shadow-sm"
+                          key={conv.id}
+                          onClick={() => setSelectedConversationId(conv.id)}
+                          className={`p-3.5 cursor-pointer transition-all flex items-start gap-3 ${
+                            isSelected
+                              ? isDarkMode
+                                ? 'bg-zinc-800/80'
+                                : 'bg-rose-50/70 border-l-4 border-rose-500'
+                              : 'hover:bg-zinc-50 dark:hover:bg-zinc-800/30'
+                          }`}
                         >
-                          <div className="flex justify-between items-start">
-                            <h5 className="text-xs font-bold text-white">{lead.name}</h5>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-rose-300 font-bold">
-                              Tam {lead.sizeInterest}
-                            </span>
+                          <div className="relative w-10 h-10 rounded-full overflow-hidden shrink-0">
+                            {conv.contactAvatar ? (
+                              <Image
+                                src={conv.contactAvatar}
+                                alt={conv.contactName}
+                                fill
+                                className="object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-rose-200 text-rose-700 flex items-center justify-center font-bold text-xs">
+                                {conv.contactName.charAt(0)}
+                              </div>
+                            )}
                           </div>
 
-                          <p className="text-[11px] text-slate-400 flex items-center space-x-1">
-                            <span>📍 {lead.neighborhood}</span>
-                          </p>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between mb-0.5">
+                              <h4 className="text-xs font-bold truncate text-zinc-900 dark:text-white">
+                                {conv.contactName}
+                              </h4>
+                              <span className="text-[10px] text-zinc-400 shrink-0">
+                                {conv.lastMessageTime}
+                              </span>
+                            </div>
 
-                          {lead.notes && (
-                            <p className="text-[11px] text-slate-300 bg-slate-900/60 p-2 rounded-lg border border-slate-800/50">
-                              {lead.notes}
+                            <p className="text-[11px] text-zinc-500 truncate mb-1">
+                              {conv.lastMessage}
                             </p>
-                          )}
 
-                          <div className="flex items-center justify-between pt-1 border-t border-slate-900 text-[10px]">
-                            <span className="font-semibold text-rose-300">
-                              R$ {lead.totalValue?.toFixed(2) || '0.00'}
-                            </span>
-                            <span className="text-slate-500">{lead.lastContact}</span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+                                📍 {conv.neighborhood}
+                              </span>
+                              {conv.unreadCount > 0 && (
+                                <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-rose-500 text-white">
+                                  {conv.unreadCount}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      ))}
+                      );
+                    })
+                  )}
+                </div>
+              </div>
 
-                      {colLeads.length === 0 && (
-                        <div className="text-center py-8 text-xs text-slate-600">
-                          Nenhum cliente nesta etapa
-                        </div>
+              {/* COLUNA 2: TIMELINE DO CHAT ATIVO COM NOTAS INTERNAS & PTT AUDIO */}
+              <div className="flex-1 flex flex-col bg-zinc-50/50 dark:bg-zinc-950/40">
+                
+                {/* Header da Conversa Ativa */}
+                <div className={`h-16 px-5 border-b flex items-center justify-between shrink-0 transition-colors ${
+                  isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-rose-100/70'
+                }`}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full overflow-hidden relative">
+                      {activeConversation.contactAvatar && (
+                        <Image
+                          src={activeConversation.contactAvatar}
+                          alt={activeConversation.contactName}
+                          fill
+                          className="object-cover"
+                        />
                       )}
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 4: AGENTE IA WHATSAPP ("GLOSSY") */}
-        {activeTab === 'agent' && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Simulador WhatsApp (8 colunas) */}
-              <div className="lg:col-span-7 flex flex-col h-[700px] rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden shadow-2xl">
-                {/* Header de WhatsApp */}
-                <div className="p-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="relative">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-rose-500 to-amber-400 p-0.5">
-                        <div className="w-full h-full rounded-full bg-slate-950 flex items-center justify-center">
-                          <Bot className="w-5 h-5 text-rose-300" />
-                        </div>
-                      </div>
-                      <span className="w-3 h-3 rounded-full bg-emerald-500 border-2 border-slate-900 absolute bottom-0 right-0"></span>
-                    </div>
                     <div>
-                      <h4 className="text-sm font-bold text-white flex items-center space-x-1.5">
-                        <span>Glossy • IA Pré-Atendimento</span>
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                      </h4>
-                      <p className="text-[11px] text-slate-400">
-                        WhatsApp Comercial Oficial: (34) 99300-2424 • Luana Frias
+                      <h3 className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                        {activeConversation.contactName}
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">
+                          WhatsApp Online
+                        </span>
+                      </h3>
+                      <p className="text-[10px] text-zinc-400">
+                        {activeConversation.contactPhone} • {activeConversation.neighborhood}
                       </p>
                     </div>
                   </div>
 
-                  <div className="text-right">
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                      Simulador Ativo
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-medium text-zinc-500">
+                      Etapa: <strong className="text-rose-600 dark:text-rose-400">{activeConversation.stage}</strong>
                     </span>
+                    <button
+                      onClick={() => {
+                        const newQueue = activeConversation.queue === 'meus' ? 'espera' : 'meus';
+                        setConversations(prev => prev.map(c => c.id === activeConversation.id ? { ...c, queue: newQueue } : c));
+                        showToast(`Movido para a fila: ${newQueue.toUpperCase()}`);
+                      }}
+                      className="px-2.5 py-1 rounded-lg text-xs font-medium border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                    >
+                      Alterar Fila
+                    </button>
                   </div>
                 </div>
 
-                {/* Balões de Conversa */}
-                <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px]">
-                  {chatMessages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`flex ${msg.sender === 'cliente' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div
-                        className={`max-w-[80%] p-3.5 rounded-2xl text-xs space-y-1.5 shadow-md ${
-                          msg.sender === 'cliente'
-                            ? 'bg-rose-600 text-white rounded-br-none'
-                            : 'bg-slate-900 text-slate-100 border border-slate-800 rounded-bl-none'
-                        }`}
-                      >
-                        <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
-
-                        {/* Card Especial de Transbordo se houver */}
-                        {msg.isHandoff && (
-                          <div className="mt-2 p-3 rounded-xl bg-slate-950/90 border border-amber-500/40 text-[11px] space-y-1">
-                            <p className="font-bold text-amber-300 flex items-center space-x-1">
-                              <PhoneCall className="w-3.5 h-3.5" />
-                              <span>TRANSBORDO REALIZADO PARA LUANA FRIAS</span>
-                            </p>
-                            <p className="text-slate-300">
-                              A cliente foi pré-qualificada e a ficha foi enviada para o WhatsApp comercial (34) 99300-2424.
-                            </p>
+                {/* Área de Mensagens (Timeline) */}
+                <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                  {currentMessages.map((msg) => {
+                    // Renderização de NOTA INTERNA VÉRTICE (Amarelo Suave com Cadeado)
+                    if (msg.isInternalNote) {
+                      return (
+                        <div
+                          key={msg.id}
+                          className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs shadow-sm max-w-xl mx-auto"
+                        >
+                          <div className="flex items-center gap-1.5 font-bold mb-1 text-[11px] text-amber-800 dark:text-amber-300">
+                            <Lock className="w-3.5 h-3.5" />
+                            <span>NOTA INTERNA VÉRTICE (NÃO ENVIADO AO CLIENTE)</span>
                           </div>
-                        )}
+                          <p className="leading-relaxed whitespace-pre-wrap">{msg.content.replace('🔒 NOTA INTERNA VÉRTICE: ', '')}</p>
+                          <span className="text-[10px] text-amber-700/70 dark:text-amber-400 mt-1.5 block text-right">
+                            {msg.createdAt} • Gravado internamente
+                          </span>
+                        </div>
+                      );
+                    }
 
-                        <div className="text-[10px] text-right opacity-70 flex justify-end items-center space-x-1">
-                          <span>{msg.timestamp}</span>
-                          {msg.sender === 'cliente' && <span>✓✓</span>}
+                    // Renderização de Áudio PTT (Simulador Player)
+                    if (msg.mediaType === 'audio') {
+                      const isPlaying = isPlayingAudio === msg.id;
+                      return (
+                        <div
+                          key={msg.id}
+                          className={`flex ${msg.senderType === 'agent' ? 'justify-end' : 'justify-start'}`}
+                        >
+                          <div className={`p-3 rounded-2xl max-w-xs sm:max-w-sm flex items-center gap-3 shadow-sm ${
+                            msg.senderType === 'agent'
+                              ? 'bg-rose-500 text-white rounded-tr-none'
+                              : 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white rounded-tl-none border border-zinc-200 dark:border-zinc-700'
+                          }`}>
+                            <button
+                              onClick={() => setIsPlayingAudio(isPlaying ? null : msg.id)}
+                              className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-transform active:scale-95 ${
+                                msg.senderType === 'agent'
+                                  ? 'bg-white text-rose-600'
+                                  : 'bg-rose-500 text-white'
+                              }`}
+                            >
+                              {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+                            </button>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-1 h-5">
+                                {[40, 70, 90, 50, 80, 100, 60, 40, 85, 95, 30, 60, 80, 45].map((h, i) => (
+                                  <span
+                                    key={i}
+                                    style={{ height: `${h}%` }}
+                                    className={`w-1 rounded-full ${
+                                      isPlaying
+                                        ? 'animate-pulse bg-white'
+                                        : msg.senderType === 'agent'
+                                        ? 'bg-white/60'
+                                        : 'bg-zinc-400'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <div className="flex items-center justify-between mt-1 text-[10px] opacity-80">
+                                <span>{msg.audioDuration || '0:22'}</span>
+                                <span>{msg.createdAt}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // Mensagens Padrão de Texto
+                    const isAgent = msg.senderType === 'agent';
+                    return (
+                      <div
+                        key={msg.id}
+                        className={`flex ${isAgent ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div
+                          className={`max-w-md p-3.5 rounded-2xl text-xs leading-relaxed shadow-sm ${
+                            isAgent
+                              ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white rounded-tr-none'
+                              : 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white rounded-tl-none border border-zinc-200/80 dark:border-zinc-700'
+                          }`}
+                        >
+                          <p className="whitespace-pre-wrap">{msg.content}</p>
+                          <div
+                            className={`flex items-center justify-end gap-1 mt-1.5 text-[10px] ${
+                              isAgent ? 'text-rose-100' : 'text-zinc-400'
+                            }`}
+                          >
+                            <span>{msg.createdAt}</span>
+                            {isAgent && <Check className="w-3 h-3 text-rose-200" />}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
+                </div>
 
-                  {isChatLoading && (
-                    <div className="flex justify-start">
-                      <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-rose-300 flex items-center space-x-2">
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        <span>Glossy está digitando e consultando o estoque...</span>
+                {/* Composer e Controle de Respostas Rápidas */}
+                <div className={`p-4 border-t relative transition-colors ${
+                  isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-rose-100/70'
+                }`}>
+                  
+                  {/* Popover de Respostas Rápidas com atalho "/" */}
+                  {showQuickReplies && (
+                    <div className={`absolute bottom-full left-4 right-4 mb-2 p-3 rounded-2xl border shadow-xl z-20 max-h-60 overflow-y-auto ${
+                      isDarkMode ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-rose-200'
+                    }`}>
+                      <div className="flex items-center justify-between mb-2 pb-1 border-b border-zinc-100 dark:border-zinc-800">
+                        <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400">
+                          ⚡ RESPOSTAS RÁPIDAS DA GLOSSY
+                        </span>
+                        <button
+                          onClick={() => setShowQuickReplies(false)}
+                          className="text-[10px] text-zinc-400 hover:text-zinc-600"
+                        >
+                          Fechar (Esc)
+                        </button>
+                      </div>
+                      <div className="space-y-1">
+                        {INITIAL_QUICK_REPLIES.map((qr) => (
+                          <div
+                            key={qr.id}
+                            onClick={() => applyQuickReply(qr)}
+                            className="p-2 rounded-xl text-xs hover:bg-rose-50 dark:hover:bg-zinc-800 cursor-pointer transition-all"
+                          >
+                            <div className="flex items-center justify-between font-bold text-zinc-800 dark:text-zinc-200">
+                              <span>{qr.title}</span>
+                              <code className="text-[10px] font-mono text-rose-600 dark:text-rose-400">
+                                {qr.shortcut}
+                              </code>
+                            </div>
+                            <p className="text-[11px] text-zinc-500 truncate mt-0.5">
+                              {qr.content}
+                            </p>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
-                </div>
 
-                {/* Sugestões Rápidas de Teste */}
-                <div className="p-2 bg-slate-900/60 border-t border-slate-800/60 flex items-center space-x-1.5 overflow-x-auto text-[11px]">
-                  <span className="text-slate-400 whitespace-nowrap text-[10px] px-2 font-medium">Testar:</span>
-                  {[
-                    'Tem legging M preta?',
-                    'Quais cores tem no tamanho P?',
-                    'Vocês entregam condicional?',
-                    'Tem promoção de Black Friday?',
-                    'Me manda o catálogo',
-                  ].map((preset) => (
+                  {/* Barra de Alternância: Modo Mensagem Cliente vs Nota Interna */}
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-1 p-1 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-[11px] font-semibold">
+                      <button
+                        onClick={() => setComposerMode('client')}
+                        className={`px-3 py-1 rounded-lg transition-all ${
+                          composerMode === 'client'
+                            ? 'bg-white dark:bg-zinc-700 text-rose-600 dark:text-rose-400 shadow-sm'
+                            : 'text-zinc-500 hover:text-zinc-800'
+                        }`}
+                      >
+                        Mensagem WhatsApp
+                      </button>
+                      <button
+                        onClick={() => setComposerMode('internal_note')}
+                        className={`px-3 py-1 rounded-lg flex items-center gap-1 transition-all ${
+                          composerMode === 'internal_note'
+                            ? 'bg-amber-400 text-amber-950 font-bold shadow-sm'
+                            : 'text-zinc-500 hover:text-zinc-800'
+                        }`}
+                      >
+                        <Lock className="w-3 h-3" />
+                        <span>Nota Interna (Amarela)</span>
+                      </button>
+                    </div>
+
                     <button
-                      key={preset}
-                      onClick={() => handleSendMessage(preset)}
-                      className="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 whitespace-nowrap border border-slate-700/50"
+                      onClick={() => setShowQuickReplies(!showQuickReplies)}
+                      className="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1"
                     >
-                      {preset}
+                      <span>Usar Atalhos (/)</span>
                     </button>
-                  ))}
+                  </div>
+
+                  {/* Input e Ações */}
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder={
+                        composerMode === 'internal_note'
+                          ? 'Escreva uma anotação interna (visível apenas para equipe Luana/Vértice)...'
+                          : 'Digite sua mensagem para a cliente (ou digite / para atalhos)...'
+                      }
+                      value={chatComposerText}
+                      onChange={(e) => {
+                        setChatComposerText(e.target.value);
+                        if (e.target.value.endsWith('/')) {
+                          setShowQuickReplies(true);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSendMessage();
+                      }}
+                      className={`flex-1 px-4 py-2.5 rounded-2xl text-xs border focus:outline-none focus:ring-2 transition-all ${
+                        composerMode === 'internal_note'
+                          ? 'bg-amber-50/80 border-amber-300 text-amber-950 focus:ring-amber-500'
+                          : isDarkMode
+                          ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-rose-500'
+                          : 'bg-zinc-50 border-zinc-200 text-zinc-900 focus:ring-rose-500'
+                      }`}
+                    />
+
+                    <button
+                      onClick={handleSendMessage}
+                      className={`p-2.5 rounded-2xl text-white transition-all transform active:scale-95 shadow-md ${
+                        composerMode === 'internal_note'
+                          ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/20 text-amber-950'
+                          : 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/20'
+                      }`}
+                    >
+                      <Send className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
 
-                {/* Input de Mensagem */}
-                <div className="p-3 bg-slate-900 border-t border-slate-800 flex items-center space-x-2">
+              </div>
+
+              {/* COLUNA 3: PERFIL DO CONTATO, LOCALIZAÇÃO & CONDICIONAIS */}
+              <div className={`w-80 shrink-0 border-l flex flex-col p-5 overflow-y-auto transition-colors ${
+                isDarkMode ? 'bg-zinc-900/60 border-zinc-800' : 'bg-white border-rose-100/70'
+              }`}>
+                {/* Perfil Header */}
+                <div className="text-center pb-5 border-b border-zinc-100 dark:border-zinc-800">
+                  <div className="relative w-16 h-16 rounded-full overflow-hidden mx-auto mb-3 border-2 border-rose-300">
+                    {activeConversation.contactAvatar && (
+                      <Image
+                        src={activeConversation.contactAvatar}
+                        alt={activeConversation.contactName}
+                        fill
+                        className="object-cover"
+                      />
+                    )}
+                  </div>
+                  <h3 className="text-sm font-bold text-zinc-900 dark:text-white">
+                    {activeConversation.contactName}
+                  </h3>
+                  <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">
+                    {activeConversation.contactPhone}
+                  </p>
+                  <p className="text-[11px] text-zinc-400 mt-0.5">
+                    📍 {activeConversation.neighborhood} • {activeConversation.city}
+                  </p>
+                </div>
+
+                {/* Tags do Lead */}
+                <div className="py-4 border-b border-zinc-100 dark:border-zinc-800">
+                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-2">
+                    Tags de Perfil
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {activeConversation.tags.map((tag, i) => (
+                      <span
+                        key={i}
+                        className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 dark:bg-zinc-800 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-zinc-700"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Malinha Condicional Vinculada */}
+                <div className="py-4 border-b border-zinc-100 dark:border-zinc-800">
+                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-2">
+                    Malinha Condicional
+                  </span>
+                  {activeConversation.condicionalItems && activeConversation.condicionalItems.length > 0 ? (
+                    <div className="space-y-2">
+                      <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-amber-900 dark:text-amber-300 text-xs">
+                        <div className="font-bold flex items-center justify-between mb-1">
+                          <span>3 Peças em Prova</span>
+                          <span className="text-rose-600 dark:text-rose-400">R$ 509,70</span>
+                        </div>
+                        <ul className="text-[11px] space-y-1 text-amber-800 dark:text-amber-400">
+                          {activeConversation.condicionalItems.map((item, i) => (
+                            <li key={i}>• {item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <button
+                        onClick={() => {
+                          showToast('Venda registrada e baixa concluída no estoque!');
+                        }}
+                        className="w-full py-2 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm"
+                      >
+                        Concluir Venda da Malinha
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-zinc-400">Nenhuma condicional ativa no momento.</p>
+                  )}
+                </div>
+
+                {/* Observações Internas */}
+                <div className="py-4">
+                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-2">
+                    Anotações Operacionais
+                  </span>
+                  <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-zinc-100 dark:border-zinc-700">
+                    {activeConversation.notes || 'Sem anotações no momento.'}
+                  </p>
+                </div>
+
+              </div>
+
+            </div>
+          )}
+
+          {/* ============================================== */}
+          {/* ABA 3: ESTOQUE REVISADO (7 PÁGINAS COMPLETAS) */}
+          {/* ============================================== */}
+          {activeTab === 'inventory' && (
+            <div className="p-6 space-y-6 max-w-7xl mx-auto">
+              
+              {/* Header com Estatísticas e Filtros */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-serif font-bold text-zinc-900 dark:text-white">
+                    Inventário Físico Uberlândia (Estoque Revisado)
+                  </h2>
+                  <p className="text-xs text-zinc-500">
+                    Sincronizado 100% com o PDF de 7 páginas enviado em 28/10/2026.
+                  </p>
+                </div>
+
+                {/* Métricas Rápidas */}
+                <div className="flex items-center gap-3">
+                  <div className="px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-zinc-800 border border-rose-100 dark:border-zinc-700 text-xs">
+                    <span className="text-zinc-400">Total Peças:</span>{' '}
+                    <strong className="text-rose-600 dark:text-rose-400">{stockMetrics.totalPieces}</strong>
+                  </div>
+                  <div className="px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-zinc-800 border border-amber-100 dark:border-zinc-700 text-xs">
+                    <span className="text-zinc-400">Black Friday:</span>{' '}
+                    <strong className="text-amber-600 dark:text-amber-400">{stockMetrics.bfPieces}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Barra de Filtros e Busca */}
+              <div className={`p-4 rounded-2xl border flex flex-wrap items-center gap-3 ${
+                isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-rose-100/70 shadow-sm'
+              }`}>
+                <div className="relative flex-1 min-w-[200px]">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
                   <input
                     type="text"
-                    placeholder="Digite como uma cliente do WhatsApp de Uberlândia..."
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                    className="flex-1 px-4 py-2.5 text-xs rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
-                  />
-                  <button
-                    onClick={() => handleSendMessage()}
-                    disabled={isChatLoading || !chatInput.trim()}
-                    className="p-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white disabled:opacity-40 transition-all shadow-md shadow-rose-950/40"
-                  >
-                    <Send className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Configurações & Parâmetros do Agente (5 colunas) */}
-              <div className="lg:col-span-5 space-y-4">
-                {/* Status da Chave OpenRouter */}
-                <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-3">
-                  <h4 className="text-sm font-bold text-white flex items-center space-x-2">
-                    <Key className="w-4 h-4 text-amber-400" />
-                    <span>Conexão OpenRouter (Requisito da Cliente)</span>
-                  </h4>
-                  <p className="text-xs text-slate-400">
-                    A cliente ainda não forneceu a chave da conta OpenRouter. O sistema está operando no modo simulador de alta precisão com os dados reais de estoque.
-                  </p>
-
-                  <div className="space-y-2">
-                    <label className="block text-[11px] font-medium text-slate-300">
-                      Chave API OpenRouter (quando Luana/Marcus fornecerem):
-                    </label>
-                    <input
-                      type="password"
-                      placeholder="sk-or-v1-xxxxxxxx..."
-                      value={openRouterKey}
-                      onChange={(e) => setOpenRouterKey(e.target.value)}
-                      className="w-full px-3 py-2 text-xs rounded-lg bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-amber-400 font-mono"
-                    />
-                    <p className="text-[10px] text-slate-500">
-                      A chave será salva diretamente no seu navegador para chamadas aos modelos Claude 3.5 ou Gemini 2.0.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Diretrizes Operacionais do Agente */}
-                <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-3">
-                  <h4 className="text-sm font-bold text-white flex items-center space-x-2">
-                    <ShieldCheck className="w-4 h-4 text-rose-400" />
-                    <span>Regras e Guardrails Calibrados</span>
-                  </h4>
-
-                  <ul className="text-xs text-slate-300 space-y-2 list-disc list-inside">
-                    <li><strong className="text-rose-300">Identificação de Tamanho:</strong> Sempre pergunta a numeração da cliente logo no início.</li>
-                    <li><strong className="text-rose-300">Consulta de Estoque Real:</strong> Jamais inventa cores que Luana não tenha em Uberlândia.</li>
-                    <li><strong className="text-rose-300">Oferecimento de Condicional:</strong> Lembra que em Uberlândia a cliente pode provar em casa sem taxa.</li>
-                    <li><strong className="text-rose-300">Handoff Estruturado:</strong> Monta resumo detalhado e passa o fechamento para a Luana.</li>
-                  </ul>
-                </div>
-
-                {/* Dados da Linha WhatsApp */}
-                <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-2">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    Destino do Transbordo Comercial
-                  </h4>
-                  <div className="flex items-center justify-between text-xs p-3 rounded-xl bg-slate-950 border border-slate-800">
-                    <div>
-                      <p className="font-bold text-white">Luana Frias (Comercial)</p>
-                      <p className="text-[11px] text-emerald-400 font-mono">+55 34 99300-2424</p>
-                    </div>
-                    <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[10px] font-semibold border border-emerald-500/20">
-                      Confirmado
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 5: CRIADOR DE CONTEÚDO INSTAGRAM & GRUPO VIP */}
-        {activeTab === 'content' && (
-          <div className="space-y-6">
-            <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-base font-bold text-white flex items-center space-x-2">
-                    <Camera className="w-5 h-5 text-rose-400" />
-                    <span>Automação de Conteúdo — Instagram @glossyluanaudia & Grupo VIP</span>
-                  </h3>
-                  <p className="text-xs text-slate-400">
-                    Gere publicações com base nas fotos do fornecedor e espelhe sincronizadamente no Grupo VIP de WhatsApp.
-                  </p>
-                </div>
-              </div>
-
-              {/* Seletor dos 3 Formatos Contratados no Escopo */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
-                {[
-                  {
-                    id: 'comercial',
-                    title: '1. Formato Comercial',
-                    desc: 'Preço em destaque, foco em conversão imediata e chamada para condicional/WhatsApp.',
-                  },
-                  {
-                    id: 'lifestyle',
-                    title: '2. Formato Lifestyle / Instrutivo',
-                    desc: 'Uso no dia a dia, tecnologia do tecido (zero transparência), sem preços diretos.',
-                  },
-                  {
-                    id: 'apresentacao',
-                    title: '3. Formato Apresentação do Produto',
-                    desc: 'Detalhes de costura, cós duplo anatômico, cores permanentes e edições exclusivas.',
-                  },
-                ].map((fmt) => (
-                  <button
-                    key={fmt.id}
-                    onClick={() => {
-                      setSelectedPostType(fmt.id as any);
-                      const postRef = INITIAL_POSTS.find((p) => p.type === fmt.id);
-                      if (postRef) setCustomCaption(postRef.caption);
-                    }}
-                    className={`p-4 rounded-xl text-left border transition-all ${
-                      selectedPostType === fmt.id
-                        ? 'bg-rose-500/15 border-rose-500 text-white shadow-md'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                    placeholder="Buscar por peça, cor ou categoria (ex: Cookie, Barolo, Live)..."
+                    value={inventorySearch}
+                    onChange={(e) => setInventorySearch(e.target.value)}
+                    className={`w-full pl-8 pr-3 py-2 rounded-xl text-xs border focus:outline-none focus:ring-1 focus:ring-rose-500 ${
+                      isDarkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-zinc-50 border-zinc-200'
                     }`}
-                  >
-                    <p className="text-xs font-bold text-rose-300">{fmt.title}</p>
-                    <p className="text-[11px] text-slate-400 mt-1">{fmt.desc}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Editor de Post e Pré-visualização */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Formulário do Post (7 colunas) */}
-              <div className="lg:col-span-7 p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
-                <h4 className="text-sm font-bold text-white">Editar Texto da Publicação</h4>
-
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">
-                    Selecionar Peça do Estoque para Base do Post:
-                  </label>
-                  <select
-                    value={selectedProductIndex}
-                    onChange={(e) => {
-                      const idx = Number(e.target.value);
-                      setSelectedProductIndex(idx);
-                      const prod = inventory[idx];
-                      if (prod) {
-                        setCustomCaption(
-                          `A clássica ${prod.name} na cor ${prod.color} acabou de chegar para pronta-entrega em Uberlândia! ✨🤎\n\nCós anatômico duplo que NÃO enrola, toque aveludado e zero transparência.\n\nDisponível no tamanho ${prod.size}! Quer provar no condicional sem compromisso? Clique no link da bio e fale comigo! 🛍️`
-                        );
-                      }
-                    }}
-                    className="w-full px-3 py-2 text-xs rounded-lg bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-rose-500"
-                  >
-                    {inventory.slice(0, 30).map((item, idx) => (
-                      <option key={item.id} value={idx}>
-                        {item.name} — {item.color} ({item.size}) - R$ {item.price.toFixed(2)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">
-                    Legenda Gerada com IA (Copy Comercial):
-                  </label>
-                  <textarea
-                    rows={8}
-                    value={customCaption}
-                    onChange={(e) => setCustomCaption(e.target.value)}
-                    className="w-full p-3 text-xs rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-rose-500 leading-relaxed font-sans"
                   />
                 </div>
 
-                {/* Sincronização com o Grupo VIP */}
-                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-bold text-white flex items-center space-x-1.5">
-                      <span>Espelhar no Grupo VIP de WhatsApp</span>
-                      <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-rose-500/10 text-rose-300">
-                        Automação Ativa
-                      </span>
-                    </p>
-                    <p className="text-[11px] text-slate-400">
-                      Envia simultaneamente o anúncio e o link para as clientes VIP de Uberlândia.
-                    </p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={syncToVipToggle}
-                    onChange={(e) => setSyncToVipToggle(e.target.checked)}
-                    className="w-4 h-4 rounded text-rose-500 bg-slate-900 border-slate-700"
-                  />
-                </div>
-
-                {publishSuccessMessage && (
-                  <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center space-x-2">
-                    <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-                    <span>{publishSuccessMessage}</span>
-                  </div>
-                )}
-
-                <div className="flex justify-end space-x-3 pt-2">
-                  <button
-                    onClick={handlePublishPost}
-                    className="px-5 py-2.5 text-xs font-bold rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white shadow-lg shadow-rose-950/50 flex items-center space-x-2"
-                  >
-                    <Share2 className="w-4 h-4" />
-                    <span>Publicar no Instagram & Disparar no VIP</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Pré-visualização Estilo Instagram (5 colunas) */}
-              <div className="lg:col-span-5 p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                  Pré-visualização do Feed Instagram
-                </h4>
-
-                <div className="rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden shadow-xl max-w-sm mx-auto">
-                  {/* Instagram Header */}
-                  <div className="p-3 flex items-center justify-between border-b border-slate-900">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-amber-400 to-rose-500 p-0.5">
-                        <div className="w-full h-full bg-slate-950 rounded-full flex items-center justify-center text-[10px] font-bold text-rose-300">
-                          G
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-white">glossyluanaudia</p>
-                        <p className="text-[9px] text-slate-400">Uberlândia, MG</p>
-                      </div>
-                    </div>
-                    <span className="text-slate-500 text-xs">•••</span>
-                  </div>
-
-                  {/* Mockup de Imagem */}
-                  <div className="h-64 bg-gradient-to-br from-slate-900 via-rose-950/40 to-slate-900 flex flex-col items-center justify-center p-6 text-center border-b border-slate-900">
-                    <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-500 text-white shadow-md">
-                      {selectedPostType.toUpperCase()}
-                    </span>
-                    <h5 className="text-base font-serif font-black text-rose-200 mt-3">
-                      {inventory[selectedProductIndex]?.name || 'Legging Tradicional'}
-                    </h5>
-                    <p className="text-xs text-amber-300 mt-1 font-medium">
-                      Cor: {inventory[selectedProductIndex]?.color || 'Cookie'}
-                    </p>
-                    <p className="text-xl font-extrabold text-white mt-2">
-                      R$ {inventory[selectedProductIndex]?.price.toFixed(2) || '189.90'}
-                    </p>
-                    <span className="text-[10px] text-slate-400 mt-2">Pronta-Entrega em Uberlândia</span>
-                  </div>
-
-                  {/* Ações do Post */}
-                  <div className="p-3 space-y-2">
-                    <div className="flex items-center justify-between text-slate-300 text-xs">
-                      <div className="flex items-center space-x-3">
-                        <span>❤️ 84 curtidas</span>
-                        <span>💬 12 comentários</span>
-                      </div>
-                      <span>🔖</span>
-                    </div>
-
-                    <p className="text-[11px] text-slate-300 line-clamp-3 leading-relaxed">
-                      <strong className="text-white mr-1.5">glossyluanaudia</strong>
-                      {customCaption}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 6: CLUBE VIP & SORTEIOS */}
-        {activeTab === 'loyalty' && (
-          <div className="space-y-6">
-            <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-base font-bold text-white flex items-center space-x-2">
-                    <Gift className="w-5 h-5 text-rose-400" />
-                    <span>Clube VIP & Sorteador de Brindes da Marca</span>
-                  </h3>
-                  <p className="text-xs text-slate-400">
-                    Dinâmica de fidelização conforme alinhado no Kick-off: sorteio de mimos (pochetes e blusas da marca) para clientes cadastradas.
-                  </p>
-                </div>
-
-                <button
-                  onClick={handleSpinRaffle}
-                  disabled={isSpinning}
-                  className="px-5 py-2.5 text-xs font-bold rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-slate-950 font-sans shadow-lg shadow-amber-950/40 flex items-center space-x-2"
+                {/* Filtro por Categoria */}
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className={`px-3 py-2 rounded-xl text-xs border focus:outline-none ${
+                    isDarkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-800'
+                  }`}
                 >
-                  <Award className="w-4 h-4" />
-                  <span>{isSpinning ? 'Sorteando...' : 'Realizar Sorteio do Mês'}</span>
+                  <option value="Todas">Todas as Categorias</option>
+                  <option value="Leggings">Leggings</option>
+                  <option value="Tops">Tops</option>
+                  <option value="Croppeds">Croppeds</option>
+                  <option value="Bermudas e Shorts">Bermudas e Shorts</option>
+                  <option value="Camisetas">Camisetas / T-Shirts</option>
+                  <option value="Regatas">Regatas</option>
+                  <option value="Macacões">Macacões e Conjuntos</option>
+                </select>
+
+                {/* Filtro por Tamanho */}
+                <select
+                  value={selectedSize}
+                  onChange={(e) => setSelectedSize(e.target.value)}
+                  className={`px-3 py-2 rounded-xl text-xs border focus:outline-none ${
+                    isDarkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-800'
+                  }`}
+                >
+                  <option value="Todos">Todos os Tamanhos</option>
+                  <option value="PP">PP</option>
+                  <option value="P">P</option>
+                  <option value="M">M</option>
+                  <option value="G">G</option>
+                  <option value="GG">GG</option>
+                  <option value="Único">Único</option>
+                </select>
+
+                {/* Toggle Black Friday */}
+                <button
+                  onClick={() => setOnlyBlackFriday(!onlyBlackFriday)}
+                  className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                    onlyBlackFriday
+                      ? 'bg-amber-500 text-amber-950 font-bold'
+                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+                  }`}
+                >
+                  {onlyBlackFriday ? '✓ Apenas Black Friday' : 'Filtrar Black Friday'}
                 </button>
               </div>
 
-              {/* Resultado do Sorteio */}
-              {raffleWinner && (
-                <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-500/20 via-rose-500/20 to-slate-900 border border-amber-500/40 text-center space-y-2">
-                  <p className="text-xs font-bold text-amber-300 uppercase tracking-widest">
-                    🎉 CLIENTE CONTEMPLADA NO SORTEIO VIP 🎉
-                  </p>
-                  <h4 className="text-2xl font-black text-white">{raffleWinner}</h4>
-                  <p className="text-xs text-slate-300">
-                    Prêmio: <strong>Pochete Exclusiva Glossy + Mimo Especial de Outubro</strong>
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Grid de Brindes e Participantes */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Brindes Mapeados */}
-              <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-3">
-                <h4 className="text-sm font-bold text-white">Brindes Disponíveis para Ações (Luana Frias)</h4>
-                <div className="space-y-2.5">
-                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-bold text-white">Pochete Oficial Glossy com Logomarca</p>
-                      <p className="text-[11px] text-slate-400">Acessório adquirido para campanha de fidelidade</p>
-                    </div>
-                    <span className="text-xs font-bold text-amber-300">1 unidade</span>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-bold text-white">Blusas Edição Especial (Ação Promocional)</p>
-                      <p className="text-[11px] text-slate-400">2 blusas exclusivas da marca para presentes de clientes</p>
-                    </div>
-                    <span className="text-xs font-bold text-amber-300">2 unidades</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Regras do Programa de Indicação */}
-              <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-3">
-                <h4 className="text-sm font-bold text-white">Programa de Indicação de Amigas</h4>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  Para cada amiga de Uberlândia indicada que comprar uma peça no atendimento da Glossy IA, a cliente indicadora acumula <strong>10% de desconto</strong> na próxima compra e ganha 1 cupom extra para o sorteio da pochete.
-                </p>
-                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-400">
-                  💡 Mensagem automática configurada para ser disparada pelo WhatsApp ao fechar a compra.
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 7: CATÁLOGOS & DRIVE */}
-        {activeTab === 'catalogs' && (
-          <div className="space-y-6">
-            <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <h3 className="text-base font-bold text-white flex items-center space-x-2">
-                  <FolderOpen className="w-5 h-5 text-rose-400" />
-                  <span>Central de Catálogos & Google Drive do Fornecedor</span>
-                </h3>
-                <p className="text-xs text-slate-400">
-                  Acesse os catálogos completos da Glossy para consulta rápida e envio de referências às clientes.
-                </p>
-              </div>
-
-              <a
-                href="https://drive.google.com/drive/folders/1LR8hW--sAJ76wngBoYibTNy9lPReYEbV"
-                target="_blank"
-                rel="noreferrer"
-                className="px-4 py-2 text-xs font-bold rounded-xl bg-rose-600 hover:bg-rose-500 text-white flex items-center space-x-2 shadow-md shadow-rose-950/40"
-              >
-                <span>Abrir Google Drive Oficial de Revendas</span>
-                <ExternalLink className="w-4 h-4" />
-              </a>
-            </div>
-
-            {/* Lista de Catálogos */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {CATALOG_LINKS.map((cat, idx) => (
-                <div
-                  key={idx}
-                  className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between space-y-3 hover:border-rose-500/40 transition-all"
-                >
-                  <div>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-rose-500/10 text-rose-300 font-semibold">
-                      PDF Oficial
-                    </span>
-                    <h5 className="text-xs font-bold text-white mt-2">{cat.name}</h5>
-                    <p className="text-[11px] text-slate-400">Tamanho: {cat.size}</p>
-                  </div>
-                  <a
-                    href={cat.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs font-semibold text-rose-400 hover:text-rose-300 flex items-center space-x-1"
+              {/* Grid de Cards de Estoque */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {filteredInventory.map((item) => (
+                  <div
+                    key={item.id}
+                    className={`p-4 rounded-2xl border transition-all hover:shadow-md flex flex-col justify-between ${
+                      isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-rose-100/70 shadow-sm'
+                    }`}
                   >
-                    <span>Acessar no Drive</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 dark:bg-zinc-800 text-rose-600 dark:text-rose-400">
+                          Tam: {item.size}
+                        </span>
+                        {item.isBlackFriday && (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400">
+                            Black Friday
+                          </span>
+                        )}
+                        {item.isLastPiece && (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-500 text-white">
+                            Última Peça
+                          </span>
+                        )}
+                      </div>
 
-        {/* TAB 8: INTEGRAÇÕES & HOMOLOGAÇÃO */}
-        {activeTab === 'settings' && (
-          <div className="space-y-6">
-            <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-2">
-              <h3 className="text-base font-bold text-white flex items-center space-x-2">
-                <Settings className="w-5 h-5 text-rose-400" />
-                <span>Status de Integrações & Requisitos da Cliente</span>
-              </h3>
-              <p className="text-xs text-slate-400">
-                Acompanhamento transparente das credenciais e etapas pendentes para a homologação final.
+                      <h4 className="text-xs font-bold text-zinc-900 dark:text-white">
+                        {item.name}
+                      </h4>
+                      <p className="text-[11px] text-zinc-500 mt-0.5">
+                        Cor: <strong className="text-zinc-700 dark:text-zinc-300">{item.color}</strong>
+                      </p>
+                      <p className="text-[10px] text-zinc-400">
+                        {item.category} • {item.subcategory}
+                      </p>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] text-zinc-400 block">Estoque:</span>
+                        <span className={`text-xs font-bold ${item.quantity > 0 ? 'text-zinc-900 dark:text-white' : 'text-rose-500'}`}>
+                          {item.quantity} unid.
+                        </span>
+                      </div>
+
+                      <div className="text-right">
+                        <span className="text-xs font-bold text-rose-600 dark:text-rose-400 block">
+                          R$ {item.price.toFixed(2)}
+                        </span>
+                        <button
+                          onClick={() => handleStockSale(item.id)}
+                          disabled={item.quantity === 0}
+                          className="mt-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold text-white bg-rose-500 hover:bg-rose-600 disabled:opacity-40 transition-all"
+                        >
+                          Baixa (-1)
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+            </div>
+          )}
+
+          {/* ============================================== */}
+          {/* ABA 4: POSTAGENS & AUTOMAÇÃO n8n (PAINEL TIPO DAIANE) */}
+          {/* ============================================== */}
+          {activeTab === 'posts' && (
+            <div className="p-6 space-y-6 max-w-7xl mx-auto">
+              
+              {/* Header Explicativo da Solução Canônica */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-serif font-bold text-zinc-900 dark:text-white">
+                    Central de Postagens & Automação de Conteúdo
+                  </h2>
+                  <p className="text-xs text-zinc-500">
+                    Painel intuitivo tipo Daiane com os 3 formatos de postagem e espelhamento no Grupo VIP.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    Fluxo n8n + Meta Graph API Ativo
+                  </span>
+                </div>
+              </div>
+
+              {/* Comparativo Visual dos 2 Caminhos de Automação */}
+              <div className={`p-5 rounded-3xl border ${
+                isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-rose-100 shadow-sm'
+              }`}>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 mb-3">
+                  Arquitetura de Publicação: Escolha o Seu Caminho
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Caminho A */}
+                  <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-zinc-900 dark:text-white">
+                        Caminho A: Painel Web Direto (Aplicação)
+                      </span>
+                      <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400">
+                        Manual & Visual
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-zinc-500 leading-relaxed">
+                      A Luana seleciona a peça da grade, ajusta o preço, confere o preview idêntico ao Instagram e clica em &quot;Agendar Post&quot;.
+                    </p>
+                  </div>
+
+                  {/* Caminho B */}
+                  <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-zinc-900 dark:text-white">
+                        Caminho B: Fluxo Canônico Vértice n8n
+                      </span>
+                      <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">
+                        100% Automático
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-zinc-500 leading-relaxed">
+                      O robô n8n gera os criativos com IA, envia no WhatsApp da Luana com botões <code className="text-rose-500">/postar</code> ou <code className="text-rose-500">/agendar</code>. Ao aprovar, publica no feed da <strong>@glossyluanaudia</strong> e espelha no Grupo VIP.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Criador de Post: Formulário Elegante + Prévia Real do Instagram */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                {/* Coluna Esquerda: Formulário Tipo Daiane (7 colunas) */}
+                <div className={`lg:col-span-7 p-6 rounded-3xl border ${
+                  isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-rose-100/70 shadow-sm'
+                }`}>
+                  <h3 className="text-sm font-bold text-zinc-900 dark:text-white mb-4">
+                    1. Selecione o Formato Contratual da Postagem
+                  </h3>
+
+                  {/* 3 Botões de Formatos */}
+                  <div className="grid grid-cols-3 gap-2.5 mb-5">
+                    <button
+                      onClick={() => {
+                        setNewPostFormat('comercial');
+                        setNewPostCaption(INITIAL_SCHEDULED_POSTS[0].caption);
+                      }}
+                      className={`p-3 rounded-2xl text-left border transition-all ${
+                        newPostFormat === 'comercial'
+                          ? 'border-rose-500 bg-rose-50/70 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 shadow-sm'
+                          : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300'
+                      }`}
+                    >
+                      <span className="block text-xs font-bold">1. Comercial</span>
+                      <span className="text-[10px] text-zinc-500">Com preço e venda direta</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setNewPostFormat('lifestyle');
+                        setNewPostCaption(INITIAL_SCHEDULED_POSTS[1].caption);
+                      }}
+                      className={`p-3 rounded-2xl text-left border transition-all ${
+                        newPostFormat === 'lifestyle'
+                          ? 'border-rose-500 bg-rose-50/70 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 shadow-sm'
+                          : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300'
+                      }`}
+                    >
+                      <span className="block text-xs font-bold">2. Lifestyle</span>
+                      <span className="text-[10px] text-zinc-500">Sem preço • Benefícios</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setNewPostFormat('apresentacao');
+                        setNewPostCaption(INITIAL_SCHEDULED_POSTS[2].caption);
+                      }}
+                      className={`p-3 rounded-2xl text-left border transition-all ${
+                        newPostFormat === 'apresentacao'
+                          ? 'border-rose-500 bg-rose-50/70 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 shadow-sm'
+                          : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300'
+                      }`}
+                    >
+                      <span className="block text-xs font-bold">3. Detalhes</span>
+                      <span className="text-[10px] text-zinc-500">Cós anatômico & costura</span>
+                    </button>
+                  </div>
+
+                  {/* Campos do Produto */}
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                        Peça do Estoque Físico
+                      </label>
+                      <select
+                        value={newPostProduct}
+                        onChange={(e) => setNewPostProduct(e.target.value)}
+                        className={`w-full px-3 py-2 rounded-xl text-xs border focus:outline-none ${
+                          isDarkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-zinc-50 border-zinc-200'
+                        }`}
+                      >
+                        {inventory.slice(0, 15).map((item) => (
+                          <option key={item.id} value={`${item.name} - ${item.color} (${item.size})`}>
+                            {item.name} - {item.color} ({item.size})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                        Preço Sugerido (R$)
+                      </label>
+                      <input
+                        type="text"
+                        value={newPostPrice}
+                        onChange={(e) => setNewPostPrice(e.target.value)}
+                        className={`w-full px-3 py-2 rounded-xl text-xs border focus:outline-none ${
+                          isDarkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-zinc-50 border-zinc-200'
+                        }`}
+                        placeholder="189.90"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Legenda Estruturada */}
+                  <div className="mb-5">
+                    <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                      Texto da Legenda & Chamada para Ação
+                    </label>
+                    <textarea
+                      rows={6}
+                      value={newPostCaption}
+                      onChange={(e) => setNewPostCaption(e.target.value)}
+                      className={`w-full p-3 rounded-2xl text-xs border focus:outline-none leading-relaxed ${
+                        isDarkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-zinc-50 border-zinc-200'
+                      }`}
+                    />
+                  </div>
+
+                  {/* Botão de Agendamento */}
+                  <button
+                    onClick={handleSchedulePost}
+                    className="w-full py-3 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 shadow-md shadow-rose-500/25 transition-all"
+                  >
+                    🚀 Agendar Publicação para @glossyluanaudia & Espelhar no Grupo VIP
+                  </button>
+                </div>
+
+                {/* Coluna Direita: Pré-visualização Real no Instagram (5 colunas) */}
+                <div className="lg:col-span-5 flex flex-col items-center">
+                  <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">
+                    Prévia Oficial no Instagram
+                  </span>
+
+                  <div className={`w-full max-w-sm rounded-3xl border shadow-xl overflow-hidden ${
+                    isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
+                  }`}>
+                    {/* Header do Mock Instagram */}
+                    <div className="p-3 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full overflow-hidden relative border border-rose-300">
+                          <Image src="/luana.png" alt="Luana" fill className="object-cover" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-zinc-900 dark:text-white leading-none">
+                            glossyluanaudia
+                          </p>
+                          <span className="text-[10px] text-zinc-400">Uberlândia, Minas Gerais</span>
+                        </div>
+                      </div>
+                      <span className="text-zinc-400 font-bold">•••</span>
+                    </div>
+
+                    {/* Imagem do Mock */}
+                    <div className="relative aspect-square w-full bg-zinc-100 dark:bg-zinc-800">
+                      <Image
+                        src="https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&auto=format&fit=crop&q=80"
+                        alt="Peça Glossy"
+                        fill
+                        className="object-cover"
+                      />
+                      {newPostFormat === 'comercial' && (
+                        <div className="absolute bottom-3 left-3 px-3 py-1 rounded-full bg-zinc-900/80 backdrop-blur-md text-white text-xs font-bold">
+                          R$ {newPostPrice}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Ações e Legenda */}
+                    <div className="p-3 text-xs">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3 text-rose-500 font-bold">
+                          <span>❤️ 142</span>
+                          <span>💬 18</span>
+                          <span>↗️</span>
+                        </div>
+                        <span>🔖</span>
+                      </div>
+
+                      <p className="text-[11px] text-zinc-700 dark:text-zinc-300 leading-relaxed line-clamp-4">
+                        <strong className="text-zinc-900 dark:text-white font-bold mr-1">glossyluanaudia</strong>
+                        {newPostCaption}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Quadro de Postagens Agendadas */}
+              <div className={`p-6 rounded-3xl border ${
+                isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-rose-100/70 shadow-sm'
+              }`}>
+                <h3 className="text-sm font-bold text-zinc-900 dark:text-white mb-4">
+                  Quadro Semanal de Postagens Agendadas
+                </h3>
+
+                <div className="space-y-3">
+                  {scheduledPosts.map((post) => (
+                    <div
+                      key={post.id}
+                      className="p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/80 dark:border-zinc-700 flex items-center justify-between gap-4"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-xl overflow-hidden relative shrink-0">
+                          <Image src={post.imageUrl} alt={post.title} fill className="object-cover" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="text-xs font-bold text-zinc-900 dark:text-white">
+                              {post.title}
+                            </span>
+                            <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400">
+                              {post.format}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-zinc-500">
+                            Programado para: {post.scheduledDate} às {post.scheduledTime}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">
+                          ✓ {post.status.toUpperCase()}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {/* ============================================== */}
+          {/* ABA 5: GRUPO VIP SELECT (INSPIRADO NA RENATA SOUSA) */}
+          {/* ============================================== */}
+          {activeTab === 'vip_group' && (
+            <div className="p-6 space-y-6 max-w-7xl mx-auto">
+              
+              {/* Header do Grupo VIP */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-serif font-bold text-zinc-900 dark:text-white">
+                    Automação do Grupo VIP Select (Silencioso)
+                  </h2>
+                  <p className="text-xs text-zinc-500">
+                    Estratégia de alta conversão: apenas as administradoras postam spoilers, enquetes e aberturas de condicional.
+                  </p>
+                </div>
+
+                <a
+                  href="https://chat.whatsapp.com/JotyAslBsLJKfqfqAJe5wG"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-md flex items-center gap-2"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Acessar Link Oficial do Grupo</span>
+                </a>
+              </div>
+
+              {/* Grid dos 3 Modelos Prontos para Disparo */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                
+                {/* 1. Spoiler Imediato */}
+                <div className={`p-5 rounded-3xl border flex flex-col justify-between ${
+                  isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-rose-100 shadow-sm'
+                }`}>
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-bold text-rose-600 dark:text-rose-400">
+                        🚨 SPOILER EXCLUSIVO
+                      </span>
+                      <span className="text-[10px] text-zinc-400">Alta Urgência</span>
+                    </div>
+                    <h4 className="text-xs font-bold text-zinc-900 dark:text-white mb-2">
+                      Cor Cookie Chegou em Uberlândia
+                    </h4>
+                    <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed bg-zinc-50 dark:bg-zinc-800 p-3 rounded-xl mb-4 whitespace-pre-wrap">
+                      {INITIAL_VIP_POSTS[0].text}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleVipDrop('Spoiler Exclusivo')}
+                    className="w-full py-2.5 rounded-xl text-xs font-bold text-white bg-rose-500 hover:bg-rose-600 shadow-md shadow-rose-500/20 transition-all"
+                  >
+                    Disparar Spoiler no Grupo VIP
+                  </button>
+                </div>
+
+                {/* 2. Enquete Interativa */}
+                <div className={`p-5 rounded-3xl border flex flex-col justify-between ${
+                  isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-rose-100 shadow-sm'
+                }`}>
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                        📊 ENQUETE INTERATIVA
+                      </span>
+                      <span className="text-[10px] text-zinc-400">Engajamento</span>
+                    </div>
+                    <h4 className="text-xs font-bold text-zinc-900 dark:text-white mb-2">
+                      Qual sua cor favorita para o próximo pedido?
+                    </h4>
+                    <div className="space-y-1.5 mb-4">
+                      {INITIAL_VIP_POSTS[1].pollOptions?.map((opt, i) => (
+                        <div key={i} className="p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 text-[11px] text-zinc-700 dark:text-zinc-300">
+                          🔘 {opt}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleVipDrop('Enquete Interativa')}
+                    className="w-full py-2.5 rounded-xl text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 shadow-md shadow-amber-500/20 transition-all text-amber-950"
+                  >
+                    Criar Enquete no Grupo VIP
+                  </button>
+                </div>
+
+                {/* 3. Abertura de Condicionais */}
+                <div className={`p-5 rounded-3xl border flex flex-col justify-between ${
+                  isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-rose-100 shadow-sm'
+                }`}>
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                        🛍️ CONDICIONAIS DA SEMANA
+                      </span>
+                      <span className="text-[10px] text-zinc-400">Fechamento</span>
+                    </div>
+                    <h4 className="text-xs font-bold text-zinc-900 dark:text-white mb-2">
+                      Agenda de Malinhas Aberta
+                    </h4>
+                    <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed bg-zinc-50 dark:bg-zinc-800 p-3 rounded-xl mb-4 whitespace-pre-wrap">
+                      {INITIAL_VIP_POSTS[2].text}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleVipDrop('Aviso de Condicionais')}
+                    className="w-full py-2.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all"
+                  >
+                    Abrir Vagas de Condicionais
+                  </button>
+                </div>
+
+              </div>
+
+            </div>
+          )}
+
+          {/* ============================================== */}
+          {/* ABA 6: LINKTREE & FOTO DE PERFIL GLOSSY */}
+          {/* ============================================== */}
+          {activeTab === 'linktree' && (
+            <div className="p-6 space-y-6 max-w-7xl mx-auto">
+              
+              {/* Header */}
+              <div>
+                <h2 className="text-lg font-serif font-bold text-zinc-900 dark:text-white">
+                  Gerador de Linktree & Identidade Visual Glossy
+                </h2>
+                <p className="text-xs text-zinc-500">
+                  Página de links oficiais da Luana e fotos de perfil padronizadas no modelo Glossy By Renata Sousa.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                
+                {/* Coluna Esquerda: Mockup Smartphone Linktree (6 colunas) */}
+                <div className="lg:col-span-6 flex flex-col items-center">
+                  <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3">
+                    Simulador do Linktree Oficial (@glossyluanaudia)
+                  </span>
+
+                  {/* Smartphone Frame */}
+                  <div className="w-full max-w-sm rounded-[40px] border-4 border-zinc-800 p-4 shadow-2xl bg-gradient-to-b from-[#f9f4ef] via-white to-[#f5ede4] text-zinc-900">
+                    
+                    {/* Header do Perfil */}
+                    <div className="text-center pt-4 pb-6">
+                      <div className="relative w-20 h-20 rounded-full overflow-hidden mx-auto mb-3 border-2 border-rose-400 shadow-lg">
+                        <Image src="/luana.png" alt="Luana Frias" fill className="object-cover" />
+                      </div>
+                      <h3 className="font-serif font-bold text-base tracking-wide text-zinc-900">
+                        {LINKTREE_CONFIG.title}
+                      </h3>
+                      <p className="text-[11px] font-semibold text-rose-600 mt-0.5">
+                        {LINKTREE_CONFIG.subtitle}
+                      </p>
+                      <p className="text-[10px] text-zinc-500 mt-2 px-4 leading-relaxed">
+                        {LINKTREE_CONFIG.bio}
+                      </p>
+                    </div>
+
+                    {/* Botões do Linktree */}
+                    <div className="space-y-3 pb-6">
+                      {LINKTREE_CONFIG.buttons.map((btn) => (
+                        <a
+                          key={btn.id}
+                          href={btn.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block p-3.5 rounded-2xl bg-white border border-rose-100 shadow-sm hover:shadow-md transition-all text-center group"
+                        >
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-rose-500">
+                              {btn.badge}
+                            </span>
+                            <ExternalLink className="w-3 h-3 text-zinc-300 group-hover:text-rose-500" />
+                          </div>
+                          <span className="text-xs font-bold text-zinc-900 block">
+                            {btn.title}
+                          </span>
+                          <span className="text-[10px] text-zinc-500 block mt-0.5">
+                            {btn.subtitle}
+                          </span>
+                        </a>
+                      ))}
+                    </div>
+
+                    <div className="text-center pb-2">
+                      <span className="text-[9px] font-medium text-zinc-400">
+                        Powered by Vértice Tecnologia
+                      </span>
+                    </div>
+
+                  </div>
+                </div>
+
+                {/* Coluna Direita: Gerador de Fotos de Perfil Glossy (6 colunas) */}
+                <div className={`lg:col-span-6 p-6 rounded-3xl border ${
+                  isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-rose-100 shadow-sm'
+                }`}>
+                  <h3 className="text-sm font-bold text-zinc-900 dark:text-white mb-2">
+                    Fotos de Perfil Padrão Glossy (Identidade Oficial)
+                  </h3>
+                  <p className="text-xs text-zinc-500 mb-6 leading-relaxed">
+                    A marca Glossy utiliza o flamingo com paletas de fundo contrastantes. Escolha a sua preferida para usar no Instagram e WhatsApp:
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Opção 1: Degradê Arco-íris Oficial */}
+                    <div className="p-4 rounded-2xl border border-zinc-200 dark:border-zinc-700 text-center">
+                      <div className="w-16 h-16 rounded-full mx-auto mb-2 bg-gradient-to-tr from-amber-400 via-rose-500 to-fuchsia-600 flex items-center justify-center text-white text-3xl shadow-lg">
+                        🦩
+                      </div>
+                      <span className="text-xs font-bold text-zinc-900 dark:text-white block">Degradê Oficial</span>
+                      <span className="text-[10px] text-zinc-400">Padrão Matriz Glossy</span>
+                    </div>
+
+                    {/* Opção 2: Rosa Chiclete */}
+                    <div className="p-4 rounded-2xl border border-zinc-200 dark:border-zinc-700 text-center">
+                      <div className="w-16 h-16 rounded-full mx-auto mb-2 bg-rose-500 flex items-center justify-center text-white text-3xl shadow-lg shadow-rose-500/20">
+                        🦩
+                      </div>
+                      <span className="text-xs font-bold text-zinc-900 dark:text-white block">Rosa Glossy</span>
+                      <span className="text-[10px] text-zinc-400">Delicado & Feminino</span>
+                    </div>
+
+                    {/* Opção 3: Preto Acetinado Luxo */}
+                    <div className="p-4 rounded-2xl border border-zinc-200 dark:border-zinc-700 text-center">
+                      <div className="w-16 h-16 rounded-full mx-auto mb-2 bg-zinc-900 border border-zinc-700 flex items-center justify-center text-white text-3xl shadow-lg">
+                        🦩
+                      </div>
+                      <span className="text-xs font-bold text-zinc-900 dark:text-white block">Preto Cirrê Luxo</span>
+                      <span className="text-[10px] text-zinc-400">Sofisticação</span>
+                    </div>
+
+                    {/* Opção 4: Foto da Luana com Moldura */}
+                    <div className="p-4 rounded-2xl border border-zinc-200 dark:border-zinc-700 text-center">
+                      <div className="relative w-16 h-16 rounded-full mx-auto mb-2 border-2 border-rose-500 overflow-hidden shadow-lg">
+                        <Image src="/luana.png" alt="Luana" fill className="object-cover" />
+                      </div>
+                      <span className="text-xs font-bold text-zinc-900 dark:text-white block">Luana Frias</span>
+                      <span className="text-[10px] text-zinc-400">Foto Pessoal Humanizada</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => showToast('Foto de perfil salva e enviada para o seu dispositivo!')}
+                    className="w-full mt-6 py-2.5 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 transition-all"
+                  >
+                    Exportar Conjunto de Imagens para o WhatsApp
+                  </button>
+                </div>
+
+              </div>
+
+            </div>
+          )}
+
+          {/* ============================================== */}
+          {/* ABA 7: CANAIS & WHATSAPP QR CODE */}
+          {/* ============================================== */}
+          {activeTab === 'channels' && (
+            <div className="p-6 space-y-6 max-w-4xl mx-auto">
+              
+              <div className="text-center max-w-xl mx-auto">
+                <h2 className="text-lg font-serif font-bold text-zinc-900 dark:text-white">
+                  Conexão Oficial WhatsApp Web
+                </h2>
+                <p className="text-xs text-zinc-500 mt-1">
+                  Mantenha o seu número comercial conectado de forma transparente e amigável, sem necessidade de servidores técnicos complexos.
+                </p>
+              </div>
+
+              {/* Card Central Amigável Estilo WhatsApp Web */}
+              <div className={`p-8 rounded-3xl border shadow-xl max-w-md mx-auto text-center ${
+                isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-rose-100'
+              }`}>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 mb-6">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Número Oficial: +55 (34) 99300-2424
+                </div>
+
+                {/* QR Code Simulado Dinâmico */}
+                <div className="relative w-56 h-56 mx-auto bg-zinc-100 dark:bg-zinc-800 rounded-3xl p-4 flex items-center justify-center border-2 border-dashed border-zinc-300 dark:border-zinc-700 shadow-inner mb-6">
+                  <QrCode className="w-40 h-40 text-zinc-800 dark:text-zinc-200" />
+                  <div className="absolute inset-0 flex items-center justify-center bg-white/70 dark:bg-zinc-900/80 backdrop-blur-xs rounded-3xl">
+                    <div className="text-center">
+                      <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-1" />
+                      <span className="text-xs font-bold text-zinc-900 dark:text-white">
+                        Sessão Ativa & Conectada
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-xs text-zinc-500 mb-6 leading-relaxed">
+                  Aparelho da Luana sincronizado. As mensagens recebidas dos clientes de Uberlândia chegam instantaneamente na coluna de atendimento do CRM.
+                </p>
+
+                <div className="flex items-center justify-center gap-3">
+                  <button
+                    onClick={() => {
+                      setQrSecondsLeft(45);
+                      showToast('Sessão revalidada com sucesso!');
+                    }}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                  >
+                    Revalidar Conexão ({qrSecondsLeft}s)
+                  </button>
+                  <button
+                    onClick={() => showToast('Testando canal... Mensagem de teste enviada para Luana!')}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-rose-500 hover:bg-rose-600 shadow-sm"
+                  >
+                    Testar Disparo WhatsApp
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {/* ============================================== */}
+          {/* ABA 8: CLUBE VIP & FIDELIDADE */}
+          {/* ============================================== */}
+          {activeTab === 'loyalty' && (
+            <div className="p-8 max-w-2xl mx-auto text-center space-y-4">
+              <div className="w-16 h-16 rounded-3xl bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto text-3xl">
+                🎁
+              </div>
+              <h2 className="text-xl font-serif font-bold text-zinc-900 dark:text-white">
+                Clube de Fidelidade & Sorteios VIP
+              </h2>
+              <span className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400">
+                Módulo em Construção • Fase 2
+              </span>
+              <p className="text-xs text-zinc-500 leading-relaxed max-w-md mx-auto">
+                Este módulo incluirá o acúmulo de pontos a cada compra de peças em Uberlândia, brindes automáticos para clientes fiéis e a roleta de prêmios para sorteios semanais no Grupo VIP Select.
               </p>
+              <button
+                onClick={() => setActiveTab('overview')}
+                className="mt-4 px-4 py-2 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 hover:bg-rose-50"
+              >
+                Voltar à Visão Geral
+              </button>
             </div>
+          )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* WhatsApp */}
-              <div className="p-5 rounded-2xl bg-slate-900/60 border border-emerald-500/30 space-y-2">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
-                    WhatsApp Comercial
-                  </h4>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-300">
-                    100% Configurado
-                  </span>
-                </div>
-                <p className="text-base font-bold text-white">(34) 99300-2424</p>
-                <p className="text-xs text-slate-400">
-                  Linha separada pela Luana e validada para atendimento exclusivo e triagem com a IA.
-                </p>
-              </div>
-
-              {/* Estoque */}
-              <div className="p-5 rounded-2xl bg-slate-900/60 border border-emerald-500/30 space-y-2">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
-                    Inventário Físico
-                  </h4>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-300">
-                    100% Catalogado
-                  </span>
-                </div>
-                <p className="text-base font-bold text-white">{stats.totalPieces} peças registradas</p>
-                <p className="text-xs text-slate-400">
-                  Todas as categorias, cores, tamanhos e lote de Black Friday inseridos no sistema.
-                </p>
-              </div>
-
-              {/* Instagram */}
-              <div className="p-5 rounded-2xl bg-slate-900/60 border border-amber-500/30 space-y-2">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider">
-                    Instagram Oficial
-                  </h4>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-300">
-                    Aguardando Senha
-                  </span>
-                </div>
-                <p className="text-base font-bold text-white">@glossyluanaudia</p>
-                <p className="text-xs text-slate-400">
-                  E-mail comercial informado: <code>glossyluanaudia@gmail.com</code>. Falta a senha de acesso para autorização da Meta Graph API de postagens.
-                </p>
-              </div>
-
-              {/* OpenRouter */}
-              <div className="p-5 rounded-2xl bg-slate-900/60 border border-amber-500/30 space-y-2">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider">
-                    Conta OpenRouter (LLM)
-                  </h4>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-300">
-                    Aguardando Criação
-                  </span>
-                </div>
-                <p className="text-base font-bold text-white">openrouter.ai</p>
-                <p className="text-xs text-slate-400">
-                  Necessário cadastro da conta pela cliente e inserção de créditos (ex: US$ 5 ou 10) para ativação do modelo de IA em produção no WhatsApp.
-                </p>
-              </div>
-            </div>
-
-            {/* Checklist de Homologação */}
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
-              <h4 className="text-sm font-bold text-white flex items-center space-x-2">
-                <CheckCircle2 className="w-5 h-5 text-rose-400" />
-                <span>Roteiro para a 1ª Reunião de Homologação com a Luana</span>
-              </h4>
-
-              <div className="space-y-3 text-xs text-slate-300">
-                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-start space-x-3">
-                  <span className="font-bold text-rose-400">1.</span>
-                  <div>
-                    <strong className="text-white">Demonstração do Painel de Estoque:</strong> Mostrar como Luana pode dar baixa em vendas com 1 clique e separar a malinha de condicional por bairro de Uberlândia.
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-start space-x-3">
-                  <span className="font-bold text-rose-400">2.</span>
-                  <div>
-                    <strong className="text-white">Simulação ao Vivo da Glossy IA:</strong> Testar o atendimento receptivo no WhatsApp, envio de catálogo por tamanho e handoff estruturado para o telefone dela.
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-start space-x-3">
-                  <span className="font-bold text-rose-400">3.</span>
-                  <div>
-                    <strong className="text-white">Demonstração do Gerador de Postagens nos 3 Formatos:</strong> Mostrar a criação de posts (Comercial, Lifestyle e Apresentação) e a sincronização simultânea com o Grupo VIP.
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-start space-x-3">
-                  <span className="font-bold text-rose-400">4.</span>
-                  <div>
-                    <strong className="text-white">Entrega das 2 Pendências Restantes:</strong> Inserir a senha do Instagram e a chave OpenRouter para virar a chave final para o Onboarding e Manual de Uso.
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        </div>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-800/80 py-4 bg-slate-950 text-center text-xs text-slate-500">
-        Sistema Luana Glossy • Desenvolvido pela Vértice Tecnologia (Mateus Ferreira & Lucas Ricardo da Silva) • 2026
-      </footer>
     </div>
   );
 }
