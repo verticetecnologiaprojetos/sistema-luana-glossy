@@ -52,7 +52,8 @@ import {
   Download,
   Smartphone,
   CheckSquare,
-  Square
+  Square,
+  Eye
 } from 'lucide-react';
 
 import {
@@ -174,10 +175,20 @@ export default function Home() {
   const [spoilerText, setSpoilerText] = useState('Separamos pouquíssimas unidades para o estoque de Uberlândia! Quem quiser reservar antes de postarmos no feed oficial do Instagram, me chama no privado! 👇🏃‍♀️');
   const [promoText, setPromoText] = useState('PROMOÇÃO RELÂMPAGO NO GRUPO VIP: Leggings e Tops selecionados com 20% de desconto no Pix!');
 
-  // Conexão WhatsApp Web
+  // Conexão WhatsApp UaZapi Real (https://fsdistribuidora.uazapi.com)
   const [isWhatsAppConnected, setIsWhatsAppConnected] = useState(false);
-  const [isQrGenerated, setIsQrGenerated] = useState(false);
-  const [qrSecondsLeft, setQrSecondsLeft] = useState(30);
+  const [isConnectingWhatsApp, setIsConnectingWhatsApp] = useState(false);
+  const [realQrCode, setRealQrCode] = useState<string | null>(null);
+  const [pairCode, setPairCode] = useState<string | null>(null);
+  const [connectionPhone, setConnectionPhone] = useState('553493002424');
+  const [uazapiStatus, setUazapiStatus] = useState<string>('disconnected');
+
+  // Painel de Aprovação & Prévia de Conteúdo (In-App)
+  const [selectedPreviewPost, setSelectedPreviewPost] = useState<ScheduledPost>(INITIAL_SCHEDULED_POSTS[0]);
+  const [isPublishingPostId, setIsPublishingPostId] = useState<string | null>(null);
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [editingCaptionText, setEditingCaptionText] = useState<string>('');
+  const [contentFilter, setContentFilter] = useState<'todos' | 'aguardando' | 'publicado'>('todos');
 
   // Toast / Feedback
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -187,16 +198,23 @@ export default function Home() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Timer para o QR code
+  // Checar status real do UaZapi na inicialização
   useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (isQrGenerated && !isWhatsAppConnected) {
-      timer = setInterval(() => {
-        setQrSecondsLeft((prev) => (prev > 1 ? prev - 1 : 30));
-      }, 1000);
-    }
-    return () => clearInterval(timer);
-  }, [isQrGenerated, isWhatsAppConnected]);
+    const checkStatus = async () => {
+      try {
+        const res = await fetch('/api/whatsapp/status');
+        const data = await res.json();
+        if (data.success) {
+          const isConnected = data.status === 'connected' || data.status === 'open';
+          setIsWhatsAppConnected(isConnected);
+          setUazapiStatus(data.status || 'disconnected');
+        }
+      } catch (e) {
+        console.error('Erro ao consultar status UaZapi:', e);
+      }
+    };
+    checkStatus();
+  }, []);
 
   // Conversa ativa selecionada
   const activeConversation = useMemo(() => {
@@ -562,18 +580,101 @@ export default function Home() {
     showToast(`Disparo de ${type} enviado com sucesso para o grupo: "${group.name}"!`);
   };
 
-  // Simular conexão do WhatsApp
-  const handleConnectWhatsApp = () => {
-    setIsWhatsAppConnected(true);
-    setIsQrGenerated(false);
-    showToast('WhatsApp conectado com sucesso ao número oficial (+55 34 99300-2424)!');
+  // Gerar QR Code Real via UaZapi (fsdistribuidora.uazapi.com)
+  const handleGenerateRealQr = async () => {
+    setIsConnectingWhatsApp(true);
+    setRealQrCode(null);
+    setPairCode(null);
+    try {
+      const res = await fetch('/api/whatsapp/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: connectionPhone })
+      });
+      const data = await res.json();
+      if (data.success && (data.qrcode || data.paircode)) {
+        setRealQrCode(data.qrcode || null);
+        setPairCode(data.paircode || null);
+        setUazapiStatus('qrcode_pronto');
+        showToast('QR Code oficial do UaZapi gerado com sucesso!');
+      } else {
+        showToast(data.message || 'Instância respondeu sem QR Code');
+      }
+    } catch (e) {
+      showToast('Erro ao comunicar com a API do UaZapi');
+    } finally {
+      setIsConnectingWhatsApp(false);
+    }
   };
 
-  // Desconectar WhatsApp
-  const handleDisconnectWhatsApp = () => {
-    setIsWhatsAppConnected(false);
-    setIsQrGenerated(false);
-    showToast('Sessão do WhatsApp desconectada.');
+  // Verificar Status Real no UaZapi
+  const handleCheckWhatsAppStatus = async () => {
+    try {
+      const res = await fetch('/api/whatsapp/status');
+      const data = await res.json();
+      if (data.success) {
+        const isConnected = data.status === 'connected' || data.status === 'open';
+        setIsWhatsAppConnected(isConnected);
+        setUazapiStatus(data.status || 'disconnected');
+        if (isConnected) {
+          setRealQrCode(null);
+          showToast('✅ WhatsApp Conectado e Sincronizado ao CRM!');
+        } else {
+          showToast(`Status UaZapi: ${data.status || 'Desconectado'}`);
+        }
+      } else {
+        showToast('Não foi possível obter o status da instância');
+      }
+    } catch (e) {
+      showToast('Erro de conexão com UaZapi');
+    }
+  };
+
+  // Desconectar Sessão WhatsApp Real
+  const handleDisconnectWhatsApp = async () => {
+    try {
+      await fetch('/api/whatsapp/disconnect', { method: 'POST' });
+      setIsWhatsAppConnected(false);
+      setRealQrCode(null);
+      setPairCode(null);
+      setUazapiStatus('disconnected');
+      showToast('Sessão do WhatsApp desconectada no UaZapi.');
+    } catch (e) {
+      showToast('Erro ao desconectar');
+    }
+  };
+
+  // Aprovar Post e Disparar no n8n Tel System
+  const handleApproveAndPublishPost = async (post: ScheduledPost) => {
+    setIsPublishingPostId(post.id);
+    try {
+      const res = await fetch('/api/content/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postId: post.id,
+          title: post.title,
+          caption: post.caption,
+          productName: post.productName,
+          price: post.price,
+          imageUrl: post.imageUrl,
+          channels: post.channels
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setScheduledPosts((prev) =>
+          prev.map((p) => (p.id === post.id ? { ...p, status: 'publicado' as const } : p))
+        );
+        showToast('🚀 Aprovado! Post disparado para o n8n Tel System e publicado!');
+      } else {
+        showToast(`Erro no n8n: ${data.error || 'Falha no webhook'}`);
+      }
+    } catch (e) {
+      showToast('Erro de comunicação com o webhook n8n');
+    } finally {
+      setIsPublishingPostId(null);
+    }
   };
 
   // Login handler
@@ -601,14 +702,11 @@ export default function Home() {
         }`}>
           {/* Logo Oficial Condensed Typography */}
           <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-1.5 mb-2">
-              <span className="font-serif font-black text-3xl tracking-widest text-zinc-900 dark:text-white uppercase">
-                GLOSSY
-              </span>
-              <span className="text-xs font-serif italic text-[#C87D6B] dark:text-[#E29578] font-bold">
-                by Luana Frias
-              </span>
-            </div>
+            <img
+              src={isDarkMode ? "/brand/glossy-horizontal-branco.png" : "/brand/glossy-horizontal-preto.png"}
+              alt="Glossy Oficial"
+              className="h-10 mx-auto mb-3 object-contain"
+            />
             <p className="text-[10px] tracking-widest uppercase font-semibold text-zinc-400">
               UBERLÂNDIA • MODA FITNESS DE ALTO PADRÃO
             </p>
@@ -706,15 +804,14 @@ export default function Home() {
         {/* Topo do Menu Lateral */}
         <div className="p-5">
           
-          {/* Logo Oficial Glossy Typography */}
+          {/* Logo Oficial Glossy */}
           <div className="mb-6 pb-4 border-b border-zinc-100 dark:border-zinc-800">
-            <div className="flex items-center gap-1.5">
-              <span className="font-serif font-black text-2xl tracking-widest text-zinc-900 dark:text-white uppercase leading-none">
-                GLOSSY
-              </span>
-              <span className="text-[10px] font-serif italic text-[#C87D6B] dark:text-[#E29578] font-bold">
-                by Luana
-              </span>
+            <div className="flex items-center">
+              <img
+                src={isDarkMode ? "/brand/glossy-horizontal-branco.png" : "/brand/glossy-horizontal-preto.png"}
+                alt="Glossy Oficial"
+                className="h-8 w-auto object-contain"
+              />
             </div>
             <p className="text-[9px] uppercase tracking-wider font-semibold text-zinc-400 mt-1">
               Uberlândia • MG
@@ -725,9 +822,11 @@ export default function Home() {
           <div className={`p-3 rounded-2xl border mb-5 flex items-center gap-3 ${
             isDarkMode ? 'bg-zinc-800/60 border-zinc-700/60' : 'bg-[#FAF8F5] border-[#EFE7DE]'
           }`}>
-            <div className="w-9 h-9 rounded-full bg-zinc-900 text-white flex items-center justify-center font-bold text-xs shrink-0">
-              LF
-            </div>
+            <img
+              src="/brand/luana-frias.png"
+              alt="Luana Frias"
+              className="w-10 h-10 rounded-full object-cover shrink-0 border border-[#EFE7DE] shadow-xs"
+            />
             <div className="min-w-0 flex-1">
               <p className="text-xs font-bold truncate text-zinc-900 dark:text-white">
                 {userProfile.name}
@@ -1815,185 +1914,443 @@ export default function Home() {
           )}
 
           {/* ============================================== */}
-          {/* ABA 4: POSTAGENS & AGENDADOR */}
+          {/* ABA 4: PAINEL DE APROVAÇÃO & PRÉVIA DE CONTEÚDO */}
           {/* ============================================== */}
           {activeTab === 'posts' && (
-            <div className="p-6 space-y-6 max-w-6xl mx-auto">
+            <div className="p-6 space-y-6 max-w-7xl mx-auto">
               
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              {/* Cabeçalho do Painel */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-zinc-800">
                 <div>
-                  <h2 className="text-lg font-serif font-bold text-zinc-900 dark:text-white">
-                    Postagens & Agendamento de Conteúdo
-                  </h2>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h2 className="text-xl font-serif font-bold text-zinc-900 dark:text-white">
+                      Painel de Aprovação & Pré-visualização de Conteúdo
+                    </h2>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      n8n Tel System Ativo
+                    </span>
+                  </div>
                   <p className="text-xs text-zinc-500">
-                    Crie e agende postagens nos 3 formatos oficiais com espelhamento automático no Grupo VIP.
+                    Aprove os criativos gerados com fotos reais do Lookbook, ajuste legendas e dispare direto no Instagram (@glossyluanaudia) e Grupo VIP via n8n.
                   </p>
                 </div>
 
-                <a
-                  href="/n8n/fluxo-conteudo-glossy.json"
-                  download="fluxo-conteudo-glossy.json"
-                  className="px-3 py-1.5 rounded-xl text-xs font-semibold border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 flex items-center gap-1.5"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Baixar Workflow n8n (JSON)</span>
-                </a>
+                {/* Filtros de Pipeline */}
+                <div className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800/80 p-1 rounded-2xl">
+                  <button
+                    onClick={() => setContentFilter('todos')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                      contentFilter === 'todos'
+                        ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-xs'
+                        : 'text-zinc-500 hover:text-zinc-900'
+                    }`}
+                  >
+                    Todos ({scheduledPosts.length})
+                  </button>
+                  <button
+                    onClick={() => setContentFilter('aguardando')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                      contentFilter === 'aguardando'
+                        ? 'bg-amber-500 text-white shadow-xs'
+                        : 'text-zinc-500 hover:text-zinc-900'
+                    }`}
+                  >
+                    Aguardando ({scheduledPosts.filter(p => p.status === 'aguardando_aprovacao').length})
+                  </button>
+                  <button
+                    onClick={() => setContentFilter('publicado')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                      contentFilter === 'publicado'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-zinc-500 hover:text-zinc-900'
+                    }`}
+                  >
+                    Publicados ({scheduledPosts.filter(p => p.status === 'publicado').length})
+                  </button>
+                </div>
               </div>
 
-              {/* Criador de Post: Formulário + Prévia */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Grid Principal: Fila de Aprovação (Esquerda) + Mockup Feed Ao Vivo (Direita) */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 
-                {/* Formulário */}
-                <div className={`lg:col-span-7 p-6 rounded-3xl border ${
-                  isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-[#EFE7DE] shadow-xs'
-                }`}>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white mb-3">
-                    1. Formato Contratual
-                  </h3>
+                {/* Coluna Esquerda: Cards de Aprovação */}
+                <div className="lg:col-span-7 space-y-4">
+                  
+                  {scheduledPosts
+                    .filter((p) => {
+                      if (contentFilter === 'aguardando') return p.status === 'aguardando_aprovacao';
+                      if (contentFilter === 'publicado') return p.status === 'publicado';
+                      return true;
+                    })
+                    .map((post) => {
+                      const isSelected = selectedPreviewPost.id === post.id;
+                      const isPublishing = isPublishingPostId === post.id;
+                      const isEditing = editingPostId === post.id;
 
-                  <div className="grid grid-cols-3 gap-2.5 mb-5">
-                    <button
-                      onClick={() => {
-                        setNewPostFormat('comercial');
-                        setNewPostCaption(INITIAL_SCHEDULED_POSTS[0].caption);
-                      }}
-                      className={`p-3 rounded-2xl text-left border transition-all ${
-                        newPostFormat === 'comercial'
-                          ? 'border-zinc-900 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
-                          : 'border-zinc-200 dark:border-zinc-700'
-                      }`}
-                    >
-                      <span className="block text-xs font-bold">1. Comercial</span>
-                      <span className="text-[10px] opacity-70">Com preço visível</span>
-                    </button>
+                      return (
+                        <div
+                          key={post.id}
+                          className={`p-5 rounded-3xl border transition-all ${
+                            isSelected
+                              ? 'border-zinc-900 dark:border-white ring-2 ring-zinc-900/10 shadow-md'
+                              : 'border-[#EFE7DE] dark:border-zinc-800 shadow-xs'
+                          } ${isDarkMode ? 'bg-zinc-900' : 'bg-white'}`}
+                        >
+                          {/* Topo do Card: Imagem Real + Metadados + Status */}
+                          <div className="flex gap-4">
+                            <div className="relative w-24 h-24 shrink-0 rounded-2xl overflow-hidden bg-zinc-100 border border-zinc-200">
+                              <img
+                                src={post.imageUrl}
+                                alt={post.title}
+                                className="w-full h-full object-cover"
+                              />
+                              <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-black/70 text-white">
+                                {post.color}
+                              </span>
+                            </div>
 
-                    <button
-                      onClick={() => {
-                        setNewPostFormat('lifestyle');
-                        setNewPostCaption(INITIAL_SCHEDULED_POSTS[1].caption);
-                      }}
-                      className={`p-3 rounded-2xl text-left border transition-all ${
-                        newPostFormat === 'lifestyle'
-                          ? 'border-zinc-900 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
-                          : 'border-zinc-200 dark:border-zinc-700'
-                      }`}
-                    >
-                      <span className="block text-xs font-bold">2. Lifestyle</span>
-                      <span className="text-[10px] opacity-70">Benefícios do tecido</span>
-                    </button>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2 mb-1">
+                                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-[#C87D6B] dark:text-[#E29578]">
+                                  {post.format === 'comercial' && '1. Comercial (Preço Visível)'}
+                                  {post.format === 'lifestyle' && '2. Lifestyle (Benefícios Tecido)'}
+                                  {post.format === 'apresentacao' && '3. Detalhes & Cós Anatômico'}
+                                </span>
 
-                    <button
-                      onClick={() => {
-                        setNewPostFormat('apresentacao');
-                        setNewPostCaption(INITIAL_SCHEDULED_POSTS[2].caption);
-                      }}
-                      className={`p-3 rounded-2xl text-left border transition-all ${
-                        newPostFormat === 'apresentacao'
-                          ? 'border-zinc-900 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
-                          : 'border-zinc-200 dark:border-zinc-700'
-                      }`}
-                    >
-                      <span className="block text-xs font-bold">3. Detalhes</span>
-                      <span className="text-[10px] opacity-70">Cós anatômico</span>
-                    </button>
-                  </div>
+                                {post.status === 'publicado' ? (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                                    <CheckCircle2 className="w-3 h-3" />
+                                    Publicado no Feed
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                                    <Clock className="w-3 h-3" />
+                                    Aguardando Aprovação
+                                  </span>
+                                )}
+                              </div>
 
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-300 mb-1">
-                        Peça do Estoque
-                      </label>
-                      <select
-                        value={newPostProduct}
-                        onChange={(e) => setNewPostProduct(e.target.value)}
-                        className={`w-full px-3 py-2 rounded-xl text-xs border focus:outline-none ${
-                          isDarkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-[#FAF8F5] border-[#EFE7DE]'
-                        }`}
-                      >
-                        {inventory.slice(0, 15).map((item) => (
-                          <option key={item.id} value={`${item.name} - ${item.color} (${item.size})`}>
-                            {item.name} - {item.color} ({item.size})
-                          </option>
-                        ))}
-                      </select>
+                              <h3 className="text-sm font-bold text-zinc-900 dark:text-white truncate">
+                                {post.title}
+                              </h3>
+
+                              <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500">
+                                <span className="font-semibold text-zinc-900 dark:text-zinc-200">
+                                  R$ {post.price.toFixed(2)}
+                                </span>
+                                <span>•</span>
+                                <span>Uberlândia: Pronta-entrega / Condicional</span>
+                              </div>
+
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
+                                  Cós anatômico duplo
+                                </span>
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
+                                  Zero transparência
+                                </span>
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
+                                  Poliamida acetinada
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Caixa de Legenda: Leitura ou Edição Inline */}
+                          <div className="mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-800/80">
+                            {isEditing ? (
+                              <div className="space-y-2">
+                                <label className="block text-[11px] font-bold text-zinc-700 dark:text-zinc-300">
+                                  Editar Legenda antes de Disparar:
+                                </label>
+                                <textarea
+                                  rows={5}
+                                  value={editingCaptionText}
+                                  onChange={(e) => setEditingCaptionText(e.target.value)}
+                                  className="w-full p-3 rounded-2xl text-xs border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none leading-relaxed"
+                                />
+                                <div className="flex justify-end gap-2">
+                                  <button
+                                    onClick={() => setEditingPostId(null)}
+                                    className="px-3 py-1 rounded-xl text-xs text-zinc-500 hover:bg-zinc-100"
+                                  >
+                                    Cancelar
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setScheduledPosts(prev => prev.map(p => p.id === post.id ? { ...p, caption: editingCaptionText } : p));
+                                      if (selectedPreviewPost.id === post.id) {
+                                        setSelectedPreviewPost(prev => ({ ...prev, caption: editingCaptionText }));
+                                      }
+                                      setEditingPostId(null);
+                                      showToast('Legenda atualizada!');
+                                    }}
+                                    className="px-3 py-1 rounded-xl text-xs font-bold text-white bg-zinc-900 hover:bg-zinc-800"
+                                  >
+                                    Salvar Alterações
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div>
+                                <p className="text-xs text-zinc-600 dark:text-zinc-300 line-clamp-3 leading-relaxed whitespace-pre-line font-normal">
+                                  {post.caption}
+                                </p>
+                                <div className="flex items-center justify-between mt-2">
+                                  <div className="flex gap-1.5">
+                                    <span className="text-[10px] text-zinc-400">Canais:</span>
+                                    <span className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-300">Instagram • Facebook • Grupo VIP</span>
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      setEditingPostId(post.id);
+                                      setEditingCaptionText(post.caption);
+                                    }}
+                                    className="text-[11px] font-semibold text-[#C87D6B] hover:underline flex items-center gap-1"
+                                  >
+                                    <Edit3 className="w-3 h-3" />
+                                    Ajustar Legenda
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Barra de Ações: Aprovar & Disparar no n8n | Prévia no Feed | Copiar */}
+                          <div className="mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-800/80 flex flex-wrap items-center justify-between gap-2">
+                            <button
+                              onClick={() => setSelectedPreviewPost(post)}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                                isSelected
+                                  ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900'
+                                  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200'
+                              }`}
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>{isSelected ? 'Exibindo no Feed' : 'Ver Prévia no Feed'}</span>
+                            </button>
+
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(post.caption);
+                                  showToast('Legenda copiada para a área de transferência!');
+                                }}
+                                className="px-3 py-1.5 rounded-xl text-xs font-semibold border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 flex items-center gap-1.5"
+                                title="Copiar Legenda"
+                              >
+                                <Copy className="w-3.5 h-3.5" />
+                                <span>Copiar</span>
+                              </button>
+
+                              {post.status === 'publicado' ? (
+                                <button
+                                  disabled
+                                  className="px-4 py-1.5 rounded-xl text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 flex items-center gap-1.5 cursor-default"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                  <span>Publicado via n8n</span>
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleApproveAndPublishPost(post)}
+                                  disabled={isPublishing}
+                                  className="px-4 py-1.5 rounded-xl text-xs font-bold text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 shadow-sm flex items-center gap-1.5 transition-all"
+                                >
+                                  {isPublishing ? (
+                                    <>
+                                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                      <span>Disparando no n8n...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                                      <span>Aprovar & Disparar no n8n</span>
+                                    </>
+                                  )}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                        </div>
+                      );
+                    })}
+
+                  {/* Formulário Compacto para Criar Nova Postagem com IA & Peça do Estoque */}
+                  <div className={`p-6 rounded-3xl border mt-6 ${
+                    isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-[#EFE7DE] shadow-xs'
+                  }`}>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white mb-3 flex items-center gap-2">
+                      <Plus className="w-4 h-4 text-[#C87D6B]" />
+                      Gerar Nova Sugestão de Post do Estoque
+                    </h3>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 mb-1">
+                          Peça do Estoque Físico:
+                        </label>
+                        <select
+                          value={newPostProduct}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setNewPostProduct(val);
+                            const item = inventory.find(i => `${i.name} - ${i.color}` === val);
+                            if (item) setNewPostPrice(item.price.toString());
+                          }}
+                          className={`w-full px-3 py-2 rounded-xl text-xs border focus:outline-none ${
+                            isDarkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-[#FAF8F5] border-[#EFE7DE]'
+                          }`}
+                        >
+                          {inventory.slice(0, 15).map((item) => (
+                            <option key={item.id} value={`${item.name} - ${item.color}`}>
+                              {item.name} - {item.color} (Tam {item.size} • R$ {item.price})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 mb-1">
+                          Formato de Postagem:
+                        </label>
+                        <select
+                          value={newPostFormat}
+                          onChange={(e) => setNewPostFormat(e.target.value as any)}
+                          className={`w-full px-3 py-2 rounded-xl text-xs border focus:outline-none ${
+                            isDarkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-[#FAF8F5] border-[#EFE7DE]'
+                          }`}
+                        >
+                          <option value="comercial">1. Comercial (Foco em Venda & Preço Visível)</option>
+                          <option value="lifestyle">2. Lifestyle (Benefícios & Estética Feminina)</option>
+                          <option value="apresentacao">3. Detalhes (Cós Anatômico & Zero Transparência)</option>
+                        </select>
+                      </div>
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-300 mb-1">
-                        Preço à Vista (R$)
+                    <div className="mb-3">
+                      <label className="block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 mb-1">
+                        Legenda Estruturada:
                       </label>
-                      <input
-                        type="text"
-                        value={newPostPrice}
-                        onChange={(e) => setNewPostPrice(e.target.value)}
-                        className={`w-full px-3 py-2 rounded-xl text-xs border focus:outline-none ${
+                      <textarea
+                        rows={4}
+                        value={newPostCaption}
+                        onChange={(e) => setNewPostCaption(e.target.value)}
+                        className={`w-full p-3 rounded-2xl text-xs border focus:outline-none leading-relaxed ${
                           isDarkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-[#FAF8F5] border-[#EFE7DE]'
                         }`}
                       />
                     </div>
+
+                    <button
+                      onClick={handleSchedulePost}
+                      className="w-full py-2.5 rounded-xl text-xs font-bold text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 shadow-sm"
+                    >
+                      Adicionar à Fila de Aprovação
+                    </button>
                   </div>
 
-                  <div className="mb-4">
-                    <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-300 mb-1">
-                      Legenda do Post
-                    </label>
-                    <textarea
-                      rows={6}
-                      value={newPostCaption}
-                      onChange={(e) => setNewPostCaption(e.target.value)}
-                      className={`w-full p-3 rounded-2xl text-xs border focus:outline-none leading-relaxed ${
-                        isDarkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-[#FAF8F5] border-[#EFE7DE]'
-                      }`}
-                    />
-                  </div>
-
-                  <button
-                    onClick={handleSchedulePost}
-                    className="w-full py-3 rounded-xl text-xs font-bold text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 shadow-md transition-all"
-                  >
-                    Agendar Postagem & Espelhar no Grupo VIP
-                  </button>
                 </div>
 
-                {/* Prévia Instagram Feed */}
-                <div className="lg:col-span-5 flex flex-col items-center">
-                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2">
-                    Prévia no Instagram (@glossyluanaudia)
-                  </span>
+                {/* Coluna Direita: Mockup do Feed Instagram Ao Vivo */}
+                <div className="lg:col-span-5 sticky top-6 flex flex-col items-center">
+                  <div className="w-full flex items-center justify-between mb-2 px-1">
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                      Prévia Oficial no Instagram Feed
+                    </span>
+                    <span className="text-[10px] font-medium text-[#C87D6B]">
+                      @glossyluanaudia
+                    </span>
+                  </div>
 
-                  <div className={`w-full max-w-sm rounded-3xl border shadow-lg overflow-hidden ${
-                    isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
+                  {/* Smartphone Frame */}
+                  <div className={`w-full max-w-sm rounded-[36px] border-4 border-zinc-800 dark:border-zinc-700 shadow-2xl overflow-hidden ${
+                    isDarkMode ? 'bg-zinc-900 text-white' : 'bg-white text-zinc-900'
                   }`}>
-                    <div className="p-3 border-b flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-zinc-900 text-white flex items-center justify-center font-bold text-[10px]">
-                          GL
-                        </div>
-                        <span className="font-bold">glossyluanaudia</span>
-                      </div>
-                      <span className="text-zinc-400">•••</span>
-                    </div>
-
-                    <div className="aspect-square bg-zinc-100 dark:bg-zinc-800 relative flex items-center justify-center text-center p-6">
-                      <div>
-                        <span className="font-serif font-black text-2xl tracking-widest uppercase block mb-1 text-zinc-800 dark:text-zinc-200">
-                          GLOSSY
-                        </span>
-                        <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-300">{newPostProduct}</p>
-                        {newPostFormat === 'comercial' && (
-                          <div className="mt-3 inline-block px-3 py-1 rounded-full bg-zinc-900 text-white text-xs font-bold">
-                            R$ {newPostPrice}
+                    
+                    {/* Instagram Header */}
+                    <div className="px-4 py-3 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <img
+                          src="/brand/luana-frias.png"
+                          alt="Luana Frias"
+                          className="w-8 h-8 rounded-full object-cover border border-[#EFE7DE] shadow-2xs"
+                        />
+                        <div>
+                          <div className="flex items-center gap-1">
+                            <span className="font-bold text-xs">glossyluanaudia</span>
+                            <span className="w-3 h-3 rounded-full bg-blue-500 text-white text-[8px] flex items-center justify-center font-bold">✓</span>
                           </div>
-                        )}
+                          <p className="text-[9px] text-zinc-400">Uberlândia, Minas Gerais</p>
+                        </div>
                       </div>
+                      <span className="text-zinc-400 font-bold tracking-widest text-xs">•••</span>
                     </div>
 
-                    <div className="p-3 text-xs">
-                      <p className="text-[11px] text-zinc-700 dark:text-zinc-300 line-clamp-4 leading-relaxed">
-                        <strong className="mr-1">glossyluanaudia</strong>
-                        {newPostCaption}
+                    {/* Foto Real da Peça em Alta Resolução */}
+                    <div className="aspect-square bg-zinc-950 relative overflow-hidden group">
+                      <img
+                        src={selectedPreviewPost.imageUrl}
+                        alt={selectedPreviewPost.title}
+                        className="w-full h-full object-cover"
+                      />
+                      
+                      {/* Selo Glossy Discreto sobre a Foto */}
+                      <div className="absolute top-3 left-3 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-xs text-white text-[9px] font-serif tracking-widest uppercase">
+                        GLOSSY UBERLÂNDIA
+                      </div>
+
+                      {selectedPreviewPost.format === 'comercial' && (
+                        <div className="absolute bottom-3 right-3 px-3 py-1 rounded-full bg-white/95 text-zinc-900 text-xs font-bold shadow-md">
+                          R$ {selectedPreviewPost.price.toFixed(2)}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Instagram Interactions Bar */}
+                    <div className="p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm">❤️</span>
+                          <span className="text-sm">💬</span>
+                          <span className="text-sm">✈️</span>
+                        </div>
+                        <span className="text-sm">🏷️</span>
+                      </div>
+
+                      <p className="text-[11px] font-bold mb-1">
+                        482 curtidas
+                      </p>
+
+                      {/* Legenda do Post */}
+                      <div className="text-xs space-y-1">
+                        <p className="text-[11px] leading-relaxed line-clamp-6">
+                          <strong className="mr-1.5 font-bold">glossyluanaudia</strong>
+                          {selectedPreviewPost.caption}
+                        </p>
+                        <div className="flex flex-wrap gap-1 pt-1">
+                          {selectedPreviewPost.hashtags.map((h, i) => (
+                            <span key={i} className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">
+                              {h}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <p className="text-[9px] text-zinc-400 uppercase tracking-wider mt-3">
+                        HÁ 2 HORAS • UBERLÂNDIA
                       </p>
                     </div>
+
+                    {/* Banner Informativo n8n */}
+                    <div className="p-2.5 bg-zinc-100 dark:bg-zinc-800/80 border-t border-zinc-200 dark:border-zinc-700 text-center">
+                      <p className="text-[10px] text-zinc-500 font-medium">
+                        ⚡ Disparo via n8n Tel System & Espelhamento no Grupo VIP
+                      </p>
+                    </div>
+
                   </div>
                 </div>
 
@@ -2171,36 +2528,59 @@ export default function Home() {
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 
-                {/* Mockup Smartphone */}
+                {/* Mockup Smartphone Padrão Glossy Boutique */}
                 <div className="lg:col-span-6 flex flex-col items-center">
-                  <div className="w-full max-w-xs rounded-[36px] border-4 border-zinc-800 p-4 shadow-2xl bg-gradient-to-b from-fuchsia-700 via-rose-600 to-amber-500 text-white">
+                  <div className="w-full max-w-xs rounded-[40px] border-8 border-zinc-800 p-4 shadow-2xl bg-[#FAF8F5] text-zinc-900">
                     
-                    <div className="text-center pt-4 pb-4">
-                      {/* Logo Centralizada no Card */}
-                      <div className="w-16 h-16 rounded-full mx-auto mb-2 bg-white text-zinc-900 flex items-center justify-center shadow-md">
-                        <span className="font-serif font-black text-xs tracking-wider">GLOSSY</span>
-                      </div>
-                      <h3 className="font-serif font-bold text-sm tracking-wider uppercase">
-                        GLOSSY BY LUANA FRIAS
+                    <div className="text-center pt-2 pb-4">
+                      {/* Logo Oficial Glossy */}
+                      <img
+                        src="/brand/glossy-horizontal-preto.png"
+                        alt="Glossy Oficial"
+                        className="h-6 mx-auto mb-3 object-contain"
+                      />
+
+                      {/* Foto Real de Luana Frias */}
+                      <img
+                        src="/brand/luana-frias.png"
+                        alt="Luana Frias"
+                        className="w-20 h-20 rounded-full mx-auto object-cover border-2 border-white shadow-md mb-2.5"
+                      />
+
+                      <h3 className="font-serif font-bold text-sm tracking-wide uppercase text-zinc-900">
+                        LUANA FRIAS
                       </h3>
-                      <p className="text-[10px] opacity-90 mt-1">
-                        Seja bem-vinda ao atendimento Glossy By Luana Frias!
+                      <p className="text-[11px] font-semibold text-[#C87D6B]">
+                        @glossyluanaudia
+                      </p>
+                      <p className="text-[10px] text-zinc-500 mt-1 max-w-[220px] mx-auto leading-relaxed">
+                        Moda fitness de luxo, alta compressão & cós anatômico. Atendimento exclusivo e condicional em Uberlândia! ✨
                       </p>
                     </div>
 
-                    <div className="space-y-2.5 pb-6">
+                    <div className="space-y-2 pb-6">
                       {linktreeItems.map((item) => (
                         <a
                           key={item.id}
                           href={item.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="block p-3 rounded-2xl bg-white/95 text-zinc-900 shadow-sm hover:bg-white text-center transition-all group"
+                          className="block p-3 rounded-2xl bg-white border border-[#EFE7DE] text-zinc-900 shadow-2xs hover:shadow-sm hover:border-[#C87D6B] text-center transition-all group"
                         >
-                          <span className="text-xs font-bold block">{item.title}</span>
-                          <span className="text-[9px] text-zinc-500 block mt-0.5">{item.subtitle}</span>
+                          <span className="text-xs font-bold block text-zinc-900 group-hover:text-[#C87D6B] transition-colors">
+                            {item.title}
+                          </span>
+                          <span className="text-[9px] text-zinc-500 block mt-0.5 font-medium">
+                            {item.subtitle}
+                          </span>
                         </a>
                       ))}
+                    </div>
+
+                    <div className="text-center pb-2">
+                      <p className="text-[8px] uppercase tracking-widest text-zinc-400 font-semibold">
+                        GLOSSY BRASIL • REVENDAS AUTORIZADAS
+                      </p>
                     </div>
 
                   </div>
@@ -2261,85 +2641,190 @@ export default function Home() {
           )}
 
           {/* ============================================== */}
-          {/* ABA 7: CONEXÃO WHATSAPP */}
+          {/* ABA 7: CONEXÃO WHATSAPP OFICIAL (UAZAPI) */}
           {/* ============================================== */}
           {activeTab === 'connection' && (
-            <div className="p-8 max-w-xl mx-auto text-center space-y-6">
+            <div className="p-8 max-w-2xl mx-auto space-y-6">
               
-              <div>
-                <h2 className="text-lg font-serif font-bold text-zinc-900 dark:text-white">
-                  Conexão WhatsApp
+              <div className="text-center">
+                <h2 className="text-xl font-serif font-bold text-zinc-900 dark:text-white">
+                  Conexão WhatsApp Oficial • UaZapi
                 </h2>
                 <p className="text-xs text-zinc-500 mt-1">
-                  Pareie o WhatsApp comercial da Luana Frias com a plataforma para receber mensagens no CRM e enviar condicionais.
+                  Pareie o WhatsApp comercial oficial da Luana Frias (+55 34 9300-2424) para receber mensagens no CRM Omnichannel e enviar sacolinhas condicionais.
                 </p>
               </div>
 
+              {/* Card de Dados da Instância Oficial */}
+              <div className={`p-4 rounded-2xl border text-xs flex items-center justify-between ${
+                isDarkMode ? 'bg-zinc-900/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
+              }`}>
+                <div className="space-y-0.5">
+                  <p className="font-semibold text-zinc-700 dark:text-zinc-300">
+                    Instância: <span className="font-bold text-zinc-900 dark:text-white">Luana Glossy</span>
+                  </p>
+                  <p className="text-[11px] text-zinc-400">
+                    Servidor: <span className="font-mono">https://fsdistribuidora.uazapi.com</span>
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                    isWhatsAppConnected
+                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                      : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${isWhatsAppConnected ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                    {isWhatsAppConnected ? 'Conectado' : (uazapiStatus === 'qrcode_pronto' ? 'Aguardando Leitura' : 'Desconectado')}
+                  </span>
+                </div>
+              </div>
+
               {isWhatsAppConnected ? (
-                <div className={`p-8 rounded-3xl border ${
+                /* Estado Conectado */
+                <div className={`p-8 rounded-3xl border text-center ${
                   isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-[#EFE7DE] shadow-sm'
                 }`}>
-                  <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-3">
+                  <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-4">
                     <CheckCircle2 className="w-8 h-8" />
                   </div>
-                  <h3 className="text-base font-bold text-zinc-900 dark:text-white">
-                    WhatsApp Conectado
+                  <h3 className="text-lg font-bold text-zinc-900 dark:text-white">
+                    WhatsApp Conectado com Sucesso!
                   </h3>
-                  <p className="text-xs text-[#C87D6B] font-semibold mt-1">
-                    +55 (34) 99300-2424 • Luana Frias
+                  <p className="text-sm font-semibold text-[#C87D6B] mt-1">
+                    +55 (34) 99300-2424 / +55 (34) 9300-2424 • Luana Frias
                   </p>
-                  <p className="text-xs text-zinc-400 mt-2">
-                    Sessão ativa e sincronizada com o CRM Omnichannel.
+                  <p className="text-xs text-zinc-400 mt-2 max-w-md mx-auto">
+                    Sessão ativa e sincronizada diretamente com o CRM Omnichannel e com as notificações de sacolinha condicional.
                   </p>
 
-                  <button
-                    onClick={handleDisconnectWhatsApp}
-                    className="mt-6 px-4 py-2 rounded-xl text-xs font-semibold text-rose-600 border border-rose-200 hover:bg-rose-50"
-                  >
-                    Desconectar Aparelho
-                  </button>
+                  <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <button
+                      onClick={handleCheckWhatsAppStatus}
+                      className="px-4 py-2.5 rounded-xl text-xs font-semibold border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 flex items-center gap-1.5"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Verificar Status em Tempo Real</span>
+                    </button>
+                    <button
+                      onClick={handleDisconnectWhatsApp}
+                      className="px-4 py-2.5 rounded-xl text-xs font-semibold text-rose-600 border border-rose-200 hover:bg-rose-50 flex items-center gap-1.5"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Desconectar Aparelho</span>
+                    </button>
+                  </div>
                 </div>
               ) : (
+                /* Estado Desconectado ou com QR Code Gerado */
                 <div className={`p-8 rounded-3xl border ${
                   isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-[#EFE7DE] shadow-sm'
                 }`}>
-                  {isQrGenerated ? (
-                    <div>
-                      <div className="w-52 h-52 mx-auto bg-zinc-100 dark:bg-zinc-800 rounded-2xl p-4 flex items-center justify-center border-2 border-dashed border-zinc-300 mb-4">
-                        <QrCode className="w-36 h-36 text-zinc-800 dark:text-zinc-200" />
-                      </div>
-                      <p className="text-xs text-zinc-500 mb-2">
-                        1. Abra o WhatsApp no celular &gt; 2. Toque em Aparelhos conectados &gt; 3. Aponte a câmera
-                      </p>
-                      <span className="text-[10px] text-zinc-400 block mb-6">
-                        Atualizando em {qrSecondsLeft} segundos
+                  {realQrCode ? (
+                    <div className="text-center space-y-4">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#C87D6B] block">
+                        QR Code Oficial Gerado pelo UaZapi
                       </span>
 
-                      <button
-                        onClick={handleConnectWhatsApp}
-                        className="w-full py-3 rounded-xl text-xs font-bold text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900"
-                      >
-                        Simular Leitura do QR Code
-                      </button>
+                      {/* Imagem Real do QR Code Base64 retornado pelo UaZapi */}
+                      <div className="w-64 h-64 mx-auto bg-white p-3 rounded-2xl shadow-md border border-zinc-200 flex items-center justify-center">
+                        <img
+                          src={realQrCode}
+                          alt="QR Code WhatsApp UaZapi"
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+
+                      {pairCode && (
+                        <div className="p-3 bg-zinc-50 dark:bg-zinc-800/60 rounded-xl border max-w-xs mx-auto">
+                          <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">
+                            Código de Pareamento por Telefone:
+                          </p>
+                          <p className="text-base font-mono font-bold tracking-widest text-zinc-900 dark:text-white mt-0.5">
+                            {pairCode}
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="text-xs text-zinc-500 space-y-1 max-w-sm mx-auto">
+                        <p>1. Abra o WhatsApp no celular comercial da Luana</p>
+                        <p>2. Toque em <strong>Aparelhos Conectados</strong> &gt; <strong>Conectar um aparelho</strong></p>
+                        <p>3. Aponte a câmera para o QR Code acima</p>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3">
+                        <button
+                          onClick={handleCheckWhatsAppStatus}
+                          className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-md flex items-center justify-center gap-2"
+                        >
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>Já Conectei • Verificar Conexão</span>
+                        </button>
+                        <button
+                          onClick={handleGenerateRealQr}
+                          disabled={isConnectingWhatsApp}
+                          className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-semibold border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 flex items-center justify-center gap-1.5"
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 ${isConnectingWhatsApp ? 'animate-spin' : ''}`} />
+                          <span>Atualizar QR Code</span>
+                        </button>
+                      </div>
                     </div>
                   ) : (
-                    <div>
-                      <div className="w-16 h-16 rounded-full bg-zinc-100 text-zinc-600 flex items-center justify-center mx-auto mb-3">
+                    <div className="text-center space-y-4">
+                      <div className="w-16 h-16 rounded-full bg-zinc-100 text-zinc-600 flex items-center justify-center mx-auto mb-2">
                         <QrCode className="w-8 h-8" />
                       </div>
-                      <h3 className="text-base font-bold text-zinc-900 dark:text-white">
-                        Nenhum Aparelho Pareado
+                      
+                      <h3 className="text-lg font-bold text-zinc-900 dark:text-white">
+                        Nenhum Aparelho Pareado no UaZapi
                       </h3>
-                      <p className="text-xs text-zinc-500 mt-1 mb-6">
-                        Clique abaixo para gerar o QR Code dinâmico de conexão com o WhatsApp oficial.
+                      
+                      <p className="text-xs text-zinc-500 max-w-md mx-auto">
+                        Gere o QR Code oficial da instância UaZapi para conectar o número da Luana Frias (+55 34 9300-2424) e começar a receber as mensagens no CRM.
                       </p>
 
-                      <button
-                        onClick={() => setIsQrGenerated(true)}
-                        className="w-full py-3 rounded-xl text-xs font-bold text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 shadow-md"
-                      >
-                        Gerar QR Code de Conexão
-                      </button>
+                      <div className="max-w-xs mx-auto text-left mb-2">
+                        <label className="block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 mb-1">
+                          Telefone da Instância:
+                        </label>
+                        <input
+                          type="text"
+                          value={connectionPhone}
+                          onChange={(e) => setConnectionPhone(e.target.value)}
+                          placeholder="553493002424"
+                          className={`w-full px-3 py-2 rounded-xl text-xs border focus:outline-none ${
+                            isDarkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-zinc-300'
+                          }`}
+                        />
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                        <button
+                          onClick={handleGenerateRealQr}
+                          disabled={isConnectingWhatsApp}
+                          className="w-full sm:w-auto px-6 py-3 rounded-xl text-xs font-bold text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 shadow-md flex items-center justify-center gap-2"
+                        >
+                          {isConnectingWhatsApp ? (
+                            <>
+                              <RefreshCw className="w-4 h-4 animate-spin" />
+                              <span>Gerando QR Code no Servidor...</span>
+                            </>
+                          ) : (
+                            <>
+                              <QrCode className="w-4 h-4" />
+                              <span>Gerar QR Code Oficial UaZapi</span>
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          onClick={handleCheckWhatsAppStatus}
+                          className="w-full sm:w-auto px-4 py-3 rounded-xl text-xs font-semibold border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 flex items-center justify-center gap-1.5"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          <span>Verificar Status Atual</span>
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

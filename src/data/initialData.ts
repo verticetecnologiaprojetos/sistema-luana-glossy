@@ -13,178 +13,72 @@ import {
 
 export const INITIAL_INVENTORY: InventoryItem[] = [
   // 1. LEGGINGS TRADICIONAL P
-  { id: 'leg-trad-p-1', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'P', color: 'Croco Verde', quantity: 1, price: 189.90, costPrice: 95.00 },
-  { id: 'leg-trad-p-2', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'P', color: 'Acrópole', quantity: 1, price: 189.90, costPrice: 95.00 },
-  { id: 'leg-trad-p-3', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'P', color: 'Cookie', quantity: 2, price: 189.90, costPrice: 95.00 },
-  { id: 'leg-trad-p-4', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'P', color: 'Café', quantity: 1, price: 189.90, costPrice: 95.00 },
-  { id: 'leg-trad-p-5', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'P', color: 'Barolo', quantity: 1, price: 189.90, costPrice: 95.00 },
-  { id: 'leg-trad-p-6', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'P', color: 'Azul-marinho', quantity: 1, price: 189.90, costPrice: 95.00 },
-  { id: 'leg-trad-p-7', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'P', color: 'Castanho', quantity: 1, price: 189.90, costPrice: 95.00 },
-  { id: 'leg-trad-p-8', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'P', color: 'Topázio', quantity: 1, price: 189.90, costPrice: 95.00 },
-  { id: 'leg-trad-p-9', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'P', color: 'Bonsai', quantity: 1, price: 189.90, costPrice: 95.00 },
-  { id: 'leg-trad-p-10', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'P', color: 'Preta Cirrê', quantity: 1, price: 199.90, costPrice: 100.00 },
+  { id: 'leg-trad-p-1', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'P', color: 'Croco Verde', quantity: 1, price: 189.90, costPrice: 95.00, imageUrl: '/products/IMG_2241.jpg' },
+  { id: 'leg-trad-p-2', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'P', color: 'Acrópole', quantity: 1, price: 189.90, costPrice: 95.00, imageUrl: '/products/IMG_2243.jpg' },
+  { id: 'leg-trad-p-3', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'P', color: 'Cookie', quantity: 2, price: 189.90, costPrice: 95.00, imageUrl: '/products/legging-cookie.jpg' },
+  { id: 'leg-trad-p-4', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'P', color: 'Café', quantity: 1, price: 189.90, costPrice: 95.00, imageUrl: '/products/IMG_2228.jpg' },
+  { id: 'leg-trad-p-5', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'P', color: 'Barolo', quantity: 1, price: 189.90, costPrice: 95.00, imageUrl: '/products/IMG_1994.jpg' },
+  { id: 'leg-trad-p-6', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'P', color: 'Azul-marinho', quantity: 1, price: 189.90, costPrice: 95.00, imageUrl: '/products/IMG_2000.jpg' },
+  { id: 'leg-trad-p-7', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'P', color: 'Castanho', quantity: 1, price: 189.90, costPrice: 95.00, imageUrl: '/products/IMG_1998.jpg' },
+  { id: 'leg-trad-p-8', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'P', color: 'Topázio', quantity: 1, price: 189.90, costPrice: 95.00, imageUrl: '/products/IMG_2248.jpg' },
+  { id: 'leg-trad-p-9', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'P', color: 'Bonsai', quantity: 1, price: 189.90, costPrice: 95.00, imageUrl: '/products/IMG_2233.jpg' },
+  { id: 'leg-trad-p-10', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'P', color: 'Preta Cirrê', quantity: 1, price: 199.90, costPrice: 100.00, imageUrl: '/products/IMG_2008.jpg' },
   // Black Friday Leggings P
-  { id: 'leg-trad-p-bf-1', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'P', color: 'Oceano', quantity: 2, price: 149.90, costPrice: 85.00, isBlackFriday: true, notes: 'Lote Promocional Black Friday' },
-  { id: 'leg-trad-p-bf-2', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'P', color: 'Orquídea', quantity: 1, price: 149.90, costPrice: 85.00, isBlackFriday: true, notes: 'Lote Promocional Black Friday' },
+  { id: 'leg-trad-p-bf-1', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'P', color: 'Oceano', quantity: 2, price: 149.90, costPrice: 85.00, isBlackFriday: true, notes: 'Lote Promocional Black Friday', imageUrl: '/products/IMG_2005.jpg' },
+  { id: 'leg-trad-p-bf-2', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'P', color: 'Orquídea', quantity: 1, price: 149.90, costPrice: 85.00, isBlackFriday: true, notes: 'Lote Promocional Black Friday', imageUrl: '/products/IMG_2005.jpg' },
 
   // LEGGINGS TRADICIONAL M
-  { id: 'leg-trad-m-1', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'M', color: 'Café', quantity: 1, price: 189.90, costPrice: 95.00 },
-  { id: 'leg-trad-m-2', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'M', color: 'Cookie', quantity: 2, price: 189.90, costPrice: 95.00 },
-  { id: 'leg-trad-m-3', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'M', color: 'Preta', quantity: 2, price: 189.90, costPrice: 95.00 },
-  { id: 'leg-trad-m-4', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'M', color: 'Barolo', quantity: 2, price: 189.90, costPrice: 95.00 },
-  { id: 'leg-trad-m-5', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'M', color: 'Croco', quantity: 1, price: 189.90, costPrice: 95.00 },
-  { id: 'leg-trad-m-6', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'M', color: 'Carbox', quantity: 1, price: 189.90, costPrice: 95.00 },
-  { id: 'leg-trad-m-7', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'M', color: 'Azul-marinho', quantity: 1, price: 189.90, costPrice: 95.00 },
-  { id: 'leg-trad-m-8', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'M', color: 'Blue Jeans', quantity: 1, price: 189.90, costPrice: 95.00 },
-  { id: 'leg-trad-m-9', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'M', color: 'Bonsai', quantity: 1, price: 189.90, costPrice: 95.00 },
+  { id: 'leg-trad-m-1', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'M', color: 'Café', quantity: 1, price: 189.90, costPrice: 95.00, imageUrl: '/products/IMG_2228.jpg' },
+  { id: 'leg-trad-m-2', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'M', color: 'Cookie', quantity: 2, price: 189.90, costPrice: 95.00, imageUrl: '/products/legging-cookie.jpg' },
+  { id: 'leg-trad-m-3', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'M', color: 'Preta', quantity: 2, price: 189.90, costPrice: 95.00, imageUrl: '/products/IMG_2008.jpg' },
+  { id: 'leg-trad-m-4', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'M', color: 'Barolo', quantity: 2, price: 189.90, costPrice: 95.00, imageUrl: '/products/IMG_1994.jpg' },
+  { id: 'leg-trad-m-5', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'M', color: 'Croco', quantity: 1, price: 189.90, costPrice: 95.00, imageUrl: '/products/IMG_2241.jpg' },
+  { id: 'leg-trad-m-6', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'M', color: 'Carbox', quantity: 1, price: 189.90, costPrice: 95.00, imageUrl: '/products/IMG_2000.jpg' },
+  { id: 'leg-trad-m-7', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'M', color: 'Azul-marinho', quantity: 1, price: 189.90, costPrice: 95.00, imageUrl: '/products/IMG_2000.jpg' },
+  { id: 'leg-trad-m-8', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'M', color: 'Blue Jeans', quantity: 1, price: 189.90, costPrice: 95.00, imageUrl: '/products/IMG_2005.jpg' },
+  { id: 'leg-trad-m-9', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'M', color: 'Bonsai', quantity: 1, price: 189.90, costPrice: 95.00, imageUrl: '/products/IMG_2233.jpg' },
   // Black Friday Leggings M
-  { id: 'leg-trad-m-bf-1', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'M', color: 'Fuschia', quantity: 2, price: 149.90, costPrice: 85.00, isBlackFriday: true, notes: 'Lote Promocional Black Friday' },
-  { id: 'leg-trad-m-bf-2', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'M', color: 'Ipê Roxo', quantity: 1, price: 149.90, costPrice: 85.00, isBlackFriday: true, notes: 'Lote Promocional Black Friday' },
+  { id: 'leg-trad-m-bf-1', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'M', color: 'Fuschia', quantity: 2, price: 149.90, costPrice: 85.00, isBlackFriday: true, notes: 'Lote Promocional Black Friday', imageUrl: '/products/IMG_2005.jpg' },
+  { id: 'leg-trad-m-bf-2', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'M', color: 'Ipê Roxo', quantity: 1, price: 149.90, costPrice: 85.00, isBlackFriday: true, notes: 'Lote Promocional Black Friday', imageUrl: '/products/IMG_2005.jpg' },
 
   // LEGGINGS G, GG, PP
-  { id: 'leg-trad-g-bf-1', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'G', color: 'Fuschia', quantity: 1, price: 149.90, costPrice: 85.00, isBlackFriday: true, notes: 'Lote Promocional Black Friday' },
-  { id: 'leg-trad-gg-1', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'GG', color: 'Preta', quantity: 1, price: 189.90, costPrice: 95.00 },
-  { id: 'leg-trad-pp-1', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'PP', color: 'Preta', quantity: 1, price: 189.90, costPrice: 95.00 },
+  { id: 'leg-trad-g-bf-1', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'G', color: 'Fuschia', quantity: 1, price: 149.90, costPrice: 85.00, isBlackFriday: true, notes: 'Lote Promocional Black Friday', imageUrl: '/products/IMG_2005.jpg' },
+  { id: 'leg-trad-gg-1', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'GG', color: 'Preta', quantity: 1, price: 189.90, costPrice: 95.00, imageUrl: '/products/IMG_2008.jpg' },
+  { id: 'leg-trad-pp-1', name: 'Legging Tradicional', category: 'Leggings', subcategory: 'Tradicional', size: 'PP', color: 'Preta', quantity: 1, price: 189.90, costPrice: 95.00, imageUrl: '/products/IMG_2008.jpg' },
 
   // OUTRAS LEGGINGS (SPORT, SPORT RACE, WAVE, ALLURE)
-  { id: 'leg-sport-1', name: 'Legging Sport', category: 'Leggings', subcategory: 'Sport', size: 'M', color: 'Azul-marinho', quantity: 1, price: 199.90, costPrice: 100.00 },
-  { id: 'leg-sport-2', name: 'Legging Sport', category: 'Leggings', subcategory: 'Sport', size: 'M', color: 'Verde Fresh', quantity: 1, price: 199.90, costPrice: 100.00 },
-  { id: 'leg-sport-3', name: 'Legging Sport', category: 'Leggings', subcategory: 'Sport', size: 'M', color: 'Azul-bebê', quantity: 1, price: 199.90, costPrice: 100.00 },
-  { id: 'leg-race-m-1', name: 'Legging Sport Race', category: 'Leggings', subcategory: 'Sport Race', size: 'M', color: 'Areia', quantity: 1, price: 209.90, costPrice: 105.00 },
-  { id: 'leg-race-m-2', name: 'Legging Sport Race', category: 'Leggings', subcategory: 'Sport Race', size: 'M', color: 'Marinho', quantity: 1, price: 209.90, costPrice: 105.00 },
-  { id: 'leg-race-m-3', name: 'Legging Sport Race', category: 'Leggings', subcategory: 'Sport Race', size: 'M', color: 'Rosa Calm', quantity: 1, price: 209.90, costPrice: 105.00 },
-  { id: 'leg-race-m-4', name: 'Legging Sport Race', category: 'Leggings', subcategory: 'Sport Race', size: 'M', color: 'Café', quantity: 1, price: 209.90, costPrice: 105.00 },
-  { id: 'leg-race-m-5', name: 'Legging Sport Race', category: 'Leggings', subcategory: 'Sport Race', size: 'M', color: 'Carbox', quantity: 1, price: 209.90, costPrice: 105.00 },
-  { id: 'leg-race-uni-1', name: 'Legging Sport Race', category: 'Leggings', subcategory: 'Sport Race', size: 'P', color: 'Verde Croco', quantity: 1, price: 209.90, costPrice: 105.00 },
-  { id: 'leg-race-uni-2', name: 'Legging Sport Race', category: 'Leggings', subcategory: 'Sport Race', size: 'M', color: 'Azul-marinho', quantity: 2, price: 209.90, costPrice: 105.00 },
-  { id: 'leg-wave-m-1', name: 'Legging Wave', category: 'Leggings', subcategory: 'Wave', size: 'M', color: 'Amarelo-manteiga', quantity: 1, price: 219.90, costPrice: 110.00, isLastPiece: true, isLimitedEdition: true },
-  { id: 'leg-allure-1', name: 'Legging Allure', category: 'Leggings', subcategory: 'Allure', size: 'M', color: 'Cookie', quantity: 1, price: 219.90, costPrice: 110.00, isLastPiece: true, isLimitedEdition: true },
+  { id: 'leg-sport-1', name: 'Legging Sport', category: 'Leggings', subcategory: 'Sport', size: 'M', color: 'Azul-marinho', quantity: 1, price: 199.90, costPrice: 100.00, imageUrl: '/products/IMG_2000.jpg' },
+  { id: 'leg-sport-2', name: 'Legging Sport', category: 'Leggings', subcategory: 'Sport', size: 'M', color: 'Verde Fresh', quantity: 1, price: 199.90, costPrice: 100.00, imageUrl: '/products/IMG_2241.jpg' },
+  { id: 'leg-sport-3', name: 'Legging Sport', category: 'Leggings', subcategory: 'Sport', size: 'M', color: 'Azul-bebê', quantity: 1, price: 199.90, costPrice: 100.00, imageUrl: '/products/IMG_2005.jpg' },
+  { id: 'leg-race-m-1', name: 'Legging Sport Race', category: 'Leggings', subcategory: 'Sport Race', size: 'M', color: 'Areia', quantity: 1, price: 209.90, costPrice: 105.00, imageUrl: '/products/IMG_1998.jpg' },
+  { id: 'leg-race-m-2', name: 'Legging Sport Race', category: 'Leggings', subcategory: 'Sport Race', size: 'M', color: 'Marinho', quantity: 1, price: 209.90, costPrice: 105.00, imageUrl: '/products/IMG_2000.jpg' },
+  { id: 'leg-race-m-3', name: 'Legging Sport Race', category: 'Leggings', subcategory: 'Sport Race', size: 'M', color: 'Rosa Calm', quantity: 1, price: 209.90, costPrice: 105.00, imageUrl: '/products/IMG_2005.jpg' },
+  { id: 'leg-race-m-4', name: 'Legging Sport Race', category: 'Leggings', subcategory: 'Sport Race', size: 'M', color: 'Café', quantity: 1, price: 209.90, costPrice: 105.00, imageUrl: '/products/IMG_2228.jpg' },
+  { id: 'leg-race-m-5', name: 'Legging Sport Race', category: 'Leggings', subcategory: 'Sport Race', size: 'M', color: 'Carbox', quantity: 1, price: 209.90, costPrice: 105.00, imageUrl: '/products/IMG_2000.jpg' },
+  { id: 'leg-race-uni-1', name: 'Legging Sport Race', category: 'Leggings', subcategory: 'Sport Race', size: 'P', color: 'Verde Croco', quantity: 1, price: 209.90, costPrice: 105.00, imageUrl: '/products/IMG_2241.jpg' },
+  { id: 'leg-race-uni-2', name: 'Legging Sport Race', category: 'Leggings', subcategory: 'Sport Race', size: 'M', color: 'Azul-marinho', quantity: 2, price: 209.90, costPrice: 105.00, imageUrl: '/products/IMG_2000.jpg' },
+  { id: 'leg-wave-m-1', name: 'Legging Wave', category: 'Leggings', subcategory: 'Wave', size: 'M', color: 'Amarelo-manteiga', quantity: 1, price: 219.90, costPrice: 110.00, isLastPiece: true, isLimitedEdition: true, imageUrl: '/products/IMG_1998.jpg' },
+  { id: 'leg-allure-1', name: 'Legging Allure', category: 'Leggings', subcategory: 'Allure', size: 'M', color: 'Cookie', quantity: 1, price: 219.90, costPrice: 110.00, isLastPiece: true, isLimitedEdition: true, imageUrl: '/products/legging-cookie.jpg' },
 
   // 2. TOPS
-  // TOP LIVE M
-  { id: 'top-live-m-1', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'M', color: 'Acrópole', quantity: 2, price: 129.90, costPrice: 65.00 },
-  { id: 'top-live-m-2', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'M', color: 'Café', quantity: 2, price: 129.90, costPrice: 65.00 },
-  { id: 'top-live-m-3', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'M', color: 'Preto', quantity: 2, price: 129.90, costPrice: 65.00 },
-  { id: 'top-live-m-4', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'M', color: 'Cookie', quantity: 2, price: 129.90, costPrice: 65.00 },
-  { id: 'top-live-m-5', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'M', color: 'Marinho', quantity: 1, price: 129.90, costPrice: 65.00 },
-  { id: 'top-live-m-6', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'M', color: 'Carbox', quantity: 1, price: 129.90, costPrice: 65.00 },
-  { id: 'top-live-m-7', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'M', color: 'Topázio', quantity: 1, price: 129.90, costPrice: 65.00 },
-  { id: 'top-live-m-8', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'M', color: 'Croco', quantity: 1, price: 129.90, costPrice: 65.00 },
-  { id: 'top-live-m-9', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'M', color: 'Bonsai', quantity: 1, price: 129.90, costPrice: 65.00 },
-  { id: 'top-live-m-10', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'M', color: 'Barolo', quantity: 1, price: 129.90, costPrice: 65.00 },
-  { id: 'top-live-m-11', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'M', color: 'Blue Jeans', quantity: 1, price: 129.90, costPrice: 65.00 },
-  { id: 'top-live-m-bf-1', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'M', color: 'Ipê Roxo', quantity: 1, price: 99.90, costPrice: 50.00, isBlackFriday: true },
-  { id: 'top-live-m-bf-2', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'M', color: 'Oceano', quantity: 2, price: 99.90, costPrice: 50.00, isBlackFriday: true },
+  { id: 'top-live-m-1', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'M', color: 'Acrópole', quantity: 2, price: 129.90, costPrice: 65.00, imageUrl: '/products/IMG_2243.jpg' },
+  { id: 'top-live-m-2', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'M', color: 'Café', quantity: 2, price: 129.90, costPrice: 65.00, imageUrl: '/products/IMG_2228.jpg' },
+  { id: 'top-live-m-3', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'M', color: 'Preto', quantity: 2, price: 129.90, costPrice: 65.00, imageUrl: '/products/IMG_2008.jpg' },
+  { id: 'top-live-m-4', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'M', color: 'Cookie', quantity: 2, price: 129.90, costPrice: 65.00, imageUrl: '/products/legging-cookie.jpg' },
+  { id: 'top-live-m-5', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'M', color: 'Marinho', quantity: 1, price: 129.90, costPrice: 65.00, imageUrl: '/products/IMG_2000.jpg' },
+  { id: 'top-live-m-6', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'M', color: 'Carbox', quantity: 1, price: 129.90, costPrice: 65.00, imageUrl: '/products/IMG_2000.jpg' },
+  { id: 'top-live-m-7', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'M', color: 'Topázio', quantity: 1, price: 129.90, costPrice: 65.00, imageUrl: '/products/IMG_2248.jpg' },
+  { id: 'top-live-m-8', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'M', color: 'Croco', quantity: 1, price: 129.90, costPrice: 65.00, imageUrl: '/products/IMG_2241.jpg' },
+  { id: 'top-live-m-9', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'M', color: 'Bonsai', quantity: 1, price: 129.90, costPrice: 65.00, imageUrl: '/products/IMG_2233.jpg' },
+  { id: 'top-live-m-10', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'M', color: 'Barolo', quantity: 1, price: 129.90, costPrice: 65.00, imageUrl: '/products/IMG_1994.jpg' },
+  { id: 'top-live-m-11', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'M', color: 'Blue Jeans', quantity: 1, price: 129.90, costPrice: 65.00, imageUrl: '/products/IMG_2005.jpg' },
+  { id: 'top-live-m-bf-1', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'M', color: 'Ipê Roxo', quantity: 1, price: 99.90, costPrice: 50.00, isBlackFriday: true, imageUrl: '/products/IMG_2005.jpg' },
+  { id: 'top-live-m-bf-2', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'M', color: 'Oceano', quantity: 2, price: 99.90, costPrice: 50.00, isBlackFriday: true, imageUrl: '/products/IMG_2005.jpg' },
 
-  // TOP LIVE P e G
-  { id: 'top-live-p-1', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'P', color: 'Bonsai', quantity: 1, price: 129.90, costPrice: 65.00 },
-  { id: 'top-live-p-2', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'P', color: 'Croco', quantity: 1, price: 129.90, costPrice: 65.00 },
-  { id: 'top-live-p-3', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'P', color: 'Preto', quantity: 1, price: 129.90, costPrice: 65.00 },
-  { id: 'top-live-p-4', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'P', color: 'Café', quantity: 1, price: 129.90, costPrice: 65.00 },
-  { id: 'top-live-p-5', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'P', color: 'Acrópole', quantity: 1, price: 129.90, costPrice: 65.00 },
-  { id: 'top-live-g-1', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'G', color: 'Preto', quantity: 2, price: 129.90, costPrice: 65.00 },
-  { id: 'top-live-g-bf-1', name: 'Top Live', category: 'Tops', subcategory: 'Live', size: 'G', color: 'Ipê Roxo', quantity: 1, price: 99.90, costPrice: 50.00, isBlackFriday: true },
-
-  // TOP GLOSSY (P, M, G)
-  { id: 'top-glossy-m-1', name: 'Top Glossy', category: 'Tops', subcategory: 'Glossy', size: 'M', color: 'Preto', quantity: 1, price: 139.90, costPrice: 70.00 },
-  { id: 'top-glossy-m-2', name: 'Top Glossy', category: 'Tops', subcategory: 'Glossy', size: 'M', color: 'Carbox', quantity: 1, price: 139.90, costPrice: 70.00 },
-  { id: 'top-glossy-m-3', name: 'Top Glossy', category: 'Tops', subcategory: 'Glossy', size: 'M', color: 'Castanho', quantity: 1, price: 139.90, costPrice: 70.00 },
-  { id: 'top-glossy-p-1', name: 'Top Glossy', category: 'Tops', subcategory: 'Glossy', size: 'P', color: 'Preto', quantity: 1, price: 139.90, costPrice: 70.00 },
-  { id: 'top-glossy-p-2', name: 'Top Glossy', category: 'Tops', subcategory: 'Glossy', size: 'P', color: 'Castanho', quantity: 1, price: 139.90, costPrice: 70.00 },
-  { id: 'top-glossy-p-bf-1', name: 'Top Glossy', category: 'Tops', subcategory: 'Glossy', size: 'P', color: 'Preto Cirrê', quantity: 2, price: 109.90, costPrice: 55.00, isBlackFriday: true },
-  { id: 'top-glossy-g-1', name: 'Top Glossy', category: 'Tops', subcategory: 'Glossy', size: 'G', color: 'Cookie', quantity: 1, price: 139.90, costPrice: 70.00 },
-  { id: 'top-glossy-g-2', name: 'Top Glossy', category: 'Tops', subcategory: 'Glossy', size: 'G', color: 'Blue Jeans', quantity: 2, price: 139.90, costPrice: 70.00 },
-  { id: 'top-glossy-g-3', name: 'Top Glossy', category: 'Tops', subcategory: 'Glossy', size: 'G', color: 'Carbox', quantity: 1, price: 139.90, costPrice: 70.00 },
-
-  // TOP RACE, ALLURE, DRAPE, WAVE, MOOVE, TRAPÉZIO
-  { id: 'top-race-m-1', name: 'Top Race', category: 'Tops', subcategory: 'Race', size: 'M', color: 'Carbox', quantity: 2, price: 139.90, costPrice: 70.00 },
-  { id: 'top-race-m-2', name: 'Top Race', category: 'Tops', subcategory: 'Race', size: 'M', color: 'Marinho', quantity: 1, price: 139.90, costPrice: 70.00 },
-  { id: 'top-race-m-3', name: 'Top Race', category: 'Tops', subcategory: 'Race', size: 'M', color: 'Azul-bebê', quantity: 1, price: 139.90, costPrice: 70.00 },
-  { id: 'top-race-m-4', name: 'Top Race', category: 'Tops', subcategory: 'Race', size: 'M', color: 'Verde Fresh', quantity: 1, price: 139.90, costPrice: 70.00 },
-  { id: 'top-race-m-5', name: 'Top Race', category: 'Tops', subcategory: 'Race', size: 'M', color: 'Areia', quantity: 2, price: 139.90, costPrice: 70.00 },
-  { id: 'top-allure-m-1', name: 'Top Allure', category: 'Tops', subcategory: 'Allure', size: 'M', color: 'Preto', quantity: 1, price: 149.90, costPrice: 75.00 },
-  { id: 'top-allure-m-2', name: 'Top Allure', category: 'Tops', subcategory: 'Allure', size: 'M', color: 'Cereja', quantity: 1, price: 149.90, costPrice: 75.00 },
-  { id: 'top-allure-m-3', name: 'Top Allure', category: 'Tops', subcategory: 'Allure', size: 'M', color: 'Tangerina', quantity: 1, price: 149.90, costPrice: 75.00 },
-  { id: 'top-drape-m-1', name: 'Top Drape Brisa', category: 'Tops', subcategory: 'Brisa', size: 'M', color: 'Preto', quantity: 2, price: 149.90, costPrice: 75.00 },
-  { id: 'top-drape-m-2', name: 'Top Drape Brisa', category: 'Tops', subcategory: 'Brisa', size: 'M', color: 'Alecrim', quantity: 1, price: 149.90, costPrice: 75.00 },
-  { id: 'top-wave-m-1', name: 'Top Wave', category: 'Tops', subcategory: 'Wave', size: 'M', color: 'Amarelo-manteiga', quantity: 1, price: 149.90, costPrice: 75.00, isLastPiece: true },
-  { id: 'top-moove-1', name: 'Top Moove', category: 'Tops', subcategory: 'Moove', size: 'M', color: 'Preto', quantity: 1, price: 149.90, costPrice: 75.00, isLimitedEdition: true },
-  { id: 'top-trapezio-g-1', name: 'Top Trapézio', category: 'Tops', subcategory: 'Trapézio', size: 'G', color: 'Croco', quantity: 1, price: 149.90, costPrice: 75.00, isLastPiece: true },
-
-  // 3. CROPPEDS
-  { id: 'crop-soft-1', name: 'Cropped Soft', category: 'Croppeds', subcategory: 'Soft', size: 'M', color: 'Cappuccino', quantity: 2, price: 139.90, costPrice: 70.00, isLimitedEdition: true, notes: 'Edição limitada' },
-  { id: 'crop-soft-2', name: 'Cropped Soft', category: 'Croppeds', subcategory: 'Soft', size: 'M', color: 'Preto', quantity: 2, price: 139.90, costPrice: 70.00, isLimitedEdition: true, notes: 'Edição limitada' },
-
-  // 4. BERMUDAS E SHORTS
-  { id: 'berm-trad-p-1', name: 'Bermuda Tradicional', category: 'Bermudas e Shorts', subcategory: 'Tradicional', size: 'P', color: 'Cookie', quantity: 2, price: 159.90, costPrice: 80.00 },
-  { id: 'berm-trad-p-2', name: 'Bermuda Tradicional', category: 'Bermudas e Shorts', subcategory: 'Tradicional', size: 'P', color: 'Croco', quantity: 2, price: 159.90, costPrice: 80.00 },
-  { id: 'berm-trad-p-bf-1', name: 'Bermuda Tradicional', category: 'Bermudas e Shorts', subcategory: 'Tradicional', size: 'P', color: 'Preto Cirrê', quantity: 1, price: 119.90, costPrice: 60.00, isBlackFriday: true },
-  { id: 'berm-trad-m-1', name: 'Bermuda Tradicional', category: 'Bermudas e Shorts', subcategory: 'Tradicional', size: 'M', color: 'Cookie', quantity: 1, price: 159.90, costPrice: 80.00 },
-  { id: 'berm-trad-m-2', name: 'Bermuda Tradicional', category: 'Bermudas e Shorts', subcategory: 'Tradicional', size: 'M', color: 'Café', quantity: 1, price: 159.90, costPrice: 80.00 },
-  { id: 'berm-trad-g-bf-1', name: 'Bermuda Tradicional', category: 'Bermudas e Shorts', subcategory: 'Tradicional', size: 'G', color: 'Preta Cirrê', quantity: 1, price: 119.90, costPrice: 60.00, isBlackFriday: true },
-  { id: 'berm-trad-g-bf-2', name: 'Bermuda Tradicional', category: 'Bermudas e Shorts', subcategory: 'Tradicional', size: 'G', color: 'Fuschia', quantity: 1, price: 119.90, costPrice: 60.00, isBlackFriday: true },
-  { id: 'berm-race-p-1', name: 'Bermuda Sport Race', category: 'Bermudas e Shorts', subcategory: 'Sport Race', size: 'P', color: 'Croco', quantity: 1, price: 169.90, costPrice: 85.00 },
-  { id: 'berm-race-p-2', name: 'Bermuda Sport Race', category: 'Bermudas e Shorts', subcategory: 'Sport Race', size: 'P', color: 'Areia', quantity: 1, price: 169.90, costPrice: 85.00 },
-  { id: 'berm-race-m-1', name: 'Bermuda Sport Race', category: 'Bermudas e Shorts', subcategory: 'Sport Race', size: 'M', color: 'Azul-bebê', quantity: 1, price: 169.90, costPrice: 85.00 },
-  { id: 'berm-allure-1', name: 'Bermuda Allure', category: 'Bermudas e Shorts', subcategory: 'Allure', size: 'M', color: 'Tangerina', quantity: 1, price: 169.90, costPrice: 85.00, isLimitedEdition: true },
-  { id: 'berm-allure-g-1', name: 'Bermuda Allure', category: 'Bermudas e Shorts', subcategory: 'Allure', size: 'G', color: 'Cereja', quantity: 1, price: 169.90, costPrice: 85.00, isLastPiece: true },
-  { id: 'short-saia-1', name: 'Short-Saia Brisa', category: 'Bermudas e Shorts', subcategory: 'Brisa', size: 'M', color: 'Alecrim', quantity: 1, price: 169.90, costPrice: 85.00, isLastPiece: true },
-  { id: 'short-pocket-p-bf', name: 'Short Pocket', category: 'Bermudas e Shorts', subcategory: 'Pocket', size: 'P', color: 'Carbox', quantity: 1, price: 129.90, costPrice: 65.00, isBlackFriday: true },
-  { id: 'short-pocket-m-bf-1', name: 'Short Pocket', category: 'Bermudas e Shorts', subcategory: 'Pocket', size: 'M', color: 'Carbox', quantity: 1, price: 129.90, costPrice: 65.00, isBlackFriday: true },
-  { id: 'short-pocket-m-bf-2', name: 'Short Pocket', category: 'Bermudas e Shorts', subcategory: 'Pocket', size: 'M', color: 'Preto', quantity: 1, price: 129.90, costPrice: 65.00, isBlackFriday: true },
-
-  // 5. CAMISETAS & T-SHIRTS
-  { id: 'tshirt-desejo-p-1', name: 'T-Shirt Desejo', category: 'Camisetas', subcategory: 'Desejo', size: 'P', color: 'Azul-marinho', quantity: 2, price: 139.90, costPrice: 70.00 },
-  { id: 'tshirt-desejo-p-2', name: 'T-Shirt Desejo', category: 'Camisetas', subcategory: 'Desejo', size: 'P', color: 'Croco', quantity: 1, price: 139.90, costPrice: 70.00 },
-  { id: 'tshirt-desejo-p-3', name: 'T-Shirt Desejo', category: 'Camisetas', subcategory: 'Desejo', size: 'P', color: 'Preta', quantity: 1, price: 139.90, costPrice: 70.00 },
-  { id: 'tshirt-desejo-p-4', name: 'T-Shirt Desejo', category: 'Camisetas', subcategory: 'Desejo', size: 'P', color: 'Romance', quantity: 1, price: 139.90, costPrice: 70.00 },
-  { id: 'tshirt-desejo-m-1', name: 'T-Shirt Desejo', category: 'Camisetas', subcategory: 'Desejo', size: 'M', color: 'Cookie', quantity: 1, price: 139.90, costPrice: 70.00 },
-  { id: 'tshirt-desejo-m-2', name: 'T-Shirt Desejo', category: 'Camisetas', subcategory: 'Desejo', size: 'M', color: 'Areia', quantity: 1, price: 139.90, costPrice: 70.00 },
-  { id: 'tshirt-desejo-m-3', name: 'T-Shirt Desejo', category: 'Camisetas', subcategory: 'Desejo', size: 'M', color: 'Croco', quantity: 1, price: 139.90, costPrice: 70.00 },
-  { id: 'tshirt-desejo-m-4', name: 'T-Shirt Desejo', category: 'Camisetas', subcategory: 'Desejo', size: 'M', color: 'Preta', quantity: 1, price: 139.90, costPrice: 70.00 },
-
-  // T-SHIRT RAGLAN & TELA
-  { id: 'tshirt-raglan-p-1', name: 'T-Shirt Raglan', category: 'Camisetas', subcategory: 'Raglan', size: 'P', color: 'Cookie', quantity: 1, price: 139.90, costPrice: 70.00 },
-  { id: 'tshirt-raglan-p-2', name: 'T-Shirt Raglan', category: 'Camisetas', subcategory: 'Raglan', size: 'P', color: 'Carbox', quantity: 1, price: 139.90, costPrice: 70.00 },
-  { id: 'tshirt-raglan-p-3', name: 'T-Shirt Raglan', category: 'Camisetas', subcategory: 'Raglan', size: 'P', color: 'Bonsai', quantity: 1, price: 139.90, costPrice: 70.00 },
-  { id: 'tshirt-raglan-p-4', name: 'T-Shirt Raglan', category: 'Camisetas', subcategory: 'Raglan', size: 'P', color: 'Azul-bebê', quantity: 1, price: 139.90, costPrice: 70.00 },
-  { id: 'tshirt-raglan-p-5', name: 'T-Shirt Raglan', category: 'Camisetas', subcategory: 'Raglan', size: 'P', color: 'Marinho', quantity: 1, price: 139.90, costPrice: 70.00 },
-  { id: 'tshirt-raglan-m-1', name: 'T-Shirt Raglan', category: 'Camisetas', subcategory: 'Raglan', size: 'M', color: 'Cookie', quantity: 1, price: 139.90, costPrice: 70.00 },
-  { id: 'tshirt-raglan-m-2', name: 'T-Shirt Raglan', category: 'Camisetas', subcategory: 'Raglan', size: 'M', color: 'Azul-bebê', quantity: 1, price: 139.90, costPrice: 70.00 },
-  { id: 'tshirt-raglan-m-3', name: 'T-Shirt Raglan', category: 'Camisetas', subcategory: 'Raglan', size: 'M', color: 'Amarelo-manteiga', quantity: 1, price: 139.90, costPrice: 70.00 },
-  { id: 'tshirt-raglan-g-1', name: 'T-Shirt Raglan', category: 'Camisetas', subcategory: 'Raglan', size: 'G', color: 'Carbox', quantity: 1, price: 139.90, costPrice: 70.00 },
-  { id: 'tshirt-raglan-g-2', name: 'T-Shirt Raglan', category: 'Camisetas', subcategory: 'Raglan', size: 'G', color: 'Cookie', quantity: 1, price: 139.90, costPrice: 70.00 },
-  { id: 'tshirt-tela-p-1', name: 'T-Shirt Tela', category: 'Camisetas', subcategory: 'Tela', size: 'P', color: 'Croco', quantity: 1, price: 149.90, costPrice: 75.00 },
-  { id: 'tshirt-tela-m-1', name: 'T-Shirt Tela', category: 'Camisetas', subcategory: 'Tela', size: 'M', color: 'Branco', quantity: 2, price: 149.90, costPrice: 75.00 },
-  { id: 'tshirt-tela-m-2', name: 'T-Shirt Tela', category: 'Camisetas', subcategory: 'Tela', size: 'M', color: 'Blue Jeans', quantity: 1, price: 149.90, costPrice: 75.00 },
-
-  // 6. REGATAS
-  { id: 'regata-tela-p-1', name: 'Regata Tela', category: 'Regatas', subcategory: 'Tela', size: 'P', color: 'Preta', quantity: 2, price: 119.90, costPrice: 60.00 },
-  { id: 'regata-tela-p-2', name: 'Regata Tela', category: 'Regatas', subcategory: 'Tela', size: 'P', color: 'Marinho', quantity: 1, price: 119.90, costPrice: 60.00 },
-  { id: 'regata-tela-p-3', name: 'Regata Tela', category: 'Regatas', subcategory: 'Tela', size: 'P', color: 'Blue Jeans', quantity: 2, price: 119.90, costPrice: 60.00 },
-  { id: 'regata-tela-p-4', name: 'Regata Tela', category: 'Regatas', subcategory: 'Tela', size: 'P', color: 'Topázio', quantity: 1, price: 119.90, costPrice: 60.00 },
-  { id: 'regata-tela-m-1', name: 'Regata Tela', category: 'Regatas', subcategory: 'Tela', size: 'M', color: 'Croco', quantity: 1, price: 119.90, costPrice: 60.00 },
-  { id: 'regata-tela-m-2', name: 'Regata Tela', category: 'Regatas', subcategory: 'Tela', size: 'M', color: 'Marinho', quantity: 1, price: 119.90, costPrice: 60.00 },
-  { id: 'regata-tela-g-1', name: 'Regata Tela', category: 'Regatas', subcategory: 'Tela', size: 'G', color: 'Marinho', quantity: 1, price: 119.90, costPrice: 60.00 },
-  { id: 'regata-lara-m-1', name: 'Regata Lara', category: 'Regatas', subcategory: 'Lara', size: 'M', color: 'Preta', quantity: 1, price: 129.90, costPrice: 65.00 },
-  { id: 'regata-lara-m-2', name: 'Regata Lara', category: 'Regatas', subcategory: 'Lara', size: 'M', color: 'Quartzo', quantity: 1, price: 129.90, costPrice: 65.00 },
-  { id: 'regata-lr-m-1', name: 'Regata LR', category: 'Regatas', subcategory: 'LR', size: 'M', color: 'Preta', quantity: 1, price: 129.90, costPrice: 65.00 },
-
-  // 7. MACACÕES
-  { id: 'conj-gaia-bf', name: 'Conjunto Gaia (Casaco M + Short P)', category: 'Macacões', subcategory: 'Gaia', size: 'M', color: 'Cocada', quantity: 1, price: 299.90, costPrice: 150.00, isBlackFriday: true, notes: 'Lote Promocional Black Friday' },
-  { id: 'mac-curto-p-1', name: 'Macacão Curto', category: 'Macacões', subcategory: 'Curto', size: 'P', color: 'Preto', quantity: 1, price: 239.90, costPrice: 120.00 },
-  { id: 'mac-curto-drape-p-1', name: 'Macacão Curto Drape', category: 'Macacões', subcategory: 'Curto Drape', size: 'P', color: 'Azul-marinho', quantity: 1, price: 249.90, costPrice: 125.00 },
-  { id: 'mac-longo-p-1', name: 'Macacão Longo', category: 'Macacões', subcategory: 'Longo', size: 'P', color: 'Preto', quantity: 1, price: 279.90, costPrice: 140.00 },
-  { id: 'mac-longo-p-bf-1', name: 'Macacão Longo', category: 'Macacões', subcategory: 'Longo', size: 'P', color: 'Azeitona', quantity: 1, price: 219.90, costPrice: 110.00, isBlackFriday: true },
-  { id: 'mac-curto-m-1', name: 'Macacão Curto', category: 'Macacões', subcategory: 'Curto', size: 'M', color: 'Cookie', quantity: 1, price: 239.90, costPrice: 120.00 },
-  { id: 'mac-curto-m-2', name: 'Macacão Curto', category: 'Macacões', subcategory: 'Curto', size: 'M', color: 'Preto', quantity: 1, price: 239.90, costPrice: 120.00 },
-  { id: 'mac-curto-drape-m-1', name: 'Macacão Curto Drape', category: 'Macacões', subcategory: 'Curto Drape', size: 'M', color: 'Quartzo', quantity: 1, price: 249.90, costPrice: 125.00 },
-  { id: 'mac-longo-m-1', name: 'Macacão Longo', category: 'Macacões', subcategory: 'Longo', size: 'M', color: 'Café', quantity: 1, price: 279.90, costPrice: 140.00 },
-  { id: 'mac-longo-m-2', name: 'Macacão Longo', category: 'Macacões', subcategory: 'Longo', size: 'M', color: 'Barolo', quantity: 1, price: 279.90, costPrice: 140.00 },
-  { id: 'mac-reg-m-1', name: 'Macacão Regata', category: 'Macacões', subcategory: 'Regata', size: 'M', color: 'Café', quantity: 1, price: 249.90, costPrice: 125.00 },
-  { id: 'mac-reg-m-bf-1', name: 'Macacão Regata', category: 'Macacões', subcategory: 'Regata', size: 'M', color: 'Alecrim', quantity: 2, price: 199.90, costPrice: 100.00, isBlackFriday: true },
-  { id: 'mac-reg-m-bf-2', name: 'Macacão Regata', category: 'Macacões', subcategory: 'Regata', size: 'M', color: 'Ipê Roxo', quantity: 1, price: 199.90, costPrice: 100.00, isBlackFriday: true },
-  { id: 'tapa-bumbum-1', name: 'Tapa-Bumbum Cropped', category: 'Macacões', subcategory: 'Acessório', size: 'Único', color: 'Preto', quantity: 1, price: 79.90, costPrice: 35.00 },
+  // MACACÕES
+  { id: 'mac-longo-m-2', name: 'Macacão Longo', category: 'Macacões', subcategory: 'Longo', size: 'M', color: 'Barolo', quantity: 1, price: 279.90, costPrice: 140.00, imageUrl: '/products/IMG_1994.jpg' },
+  { id: 'mac-longo-m-1', name: 'Macacão Longo', category: 'Macacões', subcategory: 'Longo', size: 'M', color: 'Café', quantity: 1, price: 279.90, costPrice: 140.00, imageUrl: '/products/IMG_2228.jpg' },
+  { id: 'mac-curto-p-1', name: 'Macacão Curto', category: 'Macacões', subcategory: 'Curto', size: 'P', color: 'Preto', quantity: 1, price: 239.90, costPrice: 120.00, imageUrl: '/products/IMG_2008.jpg' },
 ];
 
 export const INITIAL_SACOLINHA_CAMILA: SacolinhaCondicional = {
@@ -495,6 +389,83 @@ export const INITIAL_QUICK_REPLIES: QuickReply[] = [
   }
 ];
 
+export const INITIAL_SCHEDULED_POSTS: ScheduledPost[] = [
+  {
+    id: 'sp-1',
+    title: 'Legging Tradicional Cookie M - Pronta-Entrega',
+    format: 'comercial',
+    productName: 'Legging Tradicional Cookie',
+    color: 'Cookie',
+    price: 189.90,
+    caption: `A tonalidade mais desejada da estação está disponível para você em Uberlândia! ✨🤎
+
+A nossa Legging Tradicional na tonalidade Cookie une compressão na medida certa com cós anatômico duplo que NÃO enrola durante o treino. Zero transparência, toque acetinado e elasticidade premium Glossy!
+
+Disponível nos tamanhos P e M com entrega rápida ou sacolinha condicional para você provar no conforto da sua casa! 🛍️
+
+📲 Envie uma mensagem no direct ou clique no link da bio para reservar a sua antes que esgote!`,
+    hashtags: ['#GlossyUberlandia', '#ModaFitness', '#LookDeTreino', '#UberlandiaFitness', '#LeggingCookie', '#RevendedoraGlossy'],
+    imageUrl: '/products/legging-cookie.jpg',
+    scheduledDate: '2026-10-31',
+    scheduledTime: '11:30',
+    status: 'aguardando_aprovacao',
+    channels: {
+      instagram: true,
+      facebook: true,
+      whatsappVip: true
+    }
+  },
+  {
+    id: 'sp-2',
+    title: 'Legging Tradicional Barolo - Sofisticação & Cós Anatômico',
+    format: 'lifestyle',
+    productName: 'Legging Tradicional Barolo',
+    color: 'Barolo',
+    price: 189.90,
+    caption: `Treinar com um look que abraça as suas curvas muda completamente a sua postura! 🍷🖤
+
+A cor Barolo é o vinho mais sofisticado da coleção. Com tecido acetinado de alta gramatura e tecnologia de sustentação, você tem liberdade total de movimento do treino ao pós-treino sem se preocupar com marcações.
+
+Conforto absoluto e caimento impecável. Quem aqui ama tons intensos para treinar? Conta pra mim nos comentários! 👇✨`,
+    hashtags: ['#FitnessLifestyle', '#AutoEstimaFeminina', '#LookFitness', '#MulheresQueTreinam', '#GlossyUberlandia', '#TreinoComEstilo'],
+    imageUrl: '/products/IMG_1994.jpg',
+    scheduledDate: '2026-11-01',
+    scheduledTime: '18:45',
+    status: 'aguardando_aprovacao',
+    channels: {
+      instagram: true,
+      facebook: true,
+      whatsappVip: true
+    }
+  },
+  {
+    id: 'sp-3',
+    title: 'Legging Tradicional Café - Toque Aveludado & Zero Transparência',
+    format: 'apresentacao',
+    productName: 'Legging Tradicional Café',
+    color: 'Café',
+    price: 189.90,
+    caption: `Detalhes que fazem a diferença em cada movimento: tonalidade Café Glossy. ☕🤎
+
+Observe o acabamento:
+✔ Costura plana reforçada que não atrita na pele
+✔ Cós duplo de cintura alta que segura o abdômen sem sufocar
+✔ Poliamida encorpada com proteção UV50+ e toque sedoso
+
+Peça exclusiva disponível para você em Uberlândia. Quer provar no seu tamanho? Manda mensagem no WhatsApp comercial e agendamos sua sacolinha condicional!`,
+    hashtags: ['#ModaAcademia', '#GlossyVibes', '#Uberlandia', '#FitnessChic', '#CafeGlossy'],
+    imageUrl: '/products/IMG_2228.jpg',
+    scheduledDate: '2026-11-02',
+    scheduledTime: '12:00',
+    status: 'rascunho',
+    channels: {
+      instagram: true,
+      facebook: false,
+      whatsappVip: true
+    }
+  }
+];
+
 export const INITIAL_WHATSAPP_GROUPS: WhatsAppGroup[] = [
   {
     id: 'grp-vip-1',
@@ -503,22 +474,6 @@ export const INITIAL_WHATSAPP_GROUPS: WhatsAppGroup[] = [
     isVip: true,
     inviteLink: 'https://chat.whatsapp.com/JotyAslBsLJKfqfqAJe5wG',
     lastActivity: 'Hoje às 14:20'
-  },
-  {
-    id: 'grp-vip-2',
-    name: 'CLIENTES CONDICIONAIS - UBERLÂNDIA',
-    participantCount: 184,
-    isVip: false,
-    inviteLink: 'https://chat.whatsapp.com/JotyAslBsLJKfqfqAJe5wG',
-    lastActivity: 'Ontem'
-  },
-  {
-    id: 'grp-vip-3',
-    name: 'BASTIDORES & PARCEIRAS GLOSSY',
-    participantCount: 46,
-    isVip: false,
-    inviteLink: 'https://chat.whatsapp.com/JotyAslBsLJKfqfqAJe5wG',
-    lastActivity: '28/10'
   }
 ];
 
@@ -571,83 +526,6 @@ Válido enquanto durar o estoque físico de Uberlândia. Chama a Lu no privado p
     targetGroupName: 'VIP GLOSSY - LUANA FRIAS (OFICIAL)',
     scheduledFor: 'Quarta às 14:00',
     status: 'pronto'
-  }
-];
-
-export const INITIAL_SCHEDULED_POSTS: ScheduledPost[] = [
-  {
-    id: 'sp-1',
-    title: 'Legging Tradicional Cookie - Alta Performance & Toque Acetinado',
-    format: 'comercial',
-    productName: 'Legging Tradicional',
-    color: 'Cookie',
-    price: 189.90,
-    caption: `A cor mais desejada da estação acabou de chegar para pronta-entrega em Uberlândia! ✨🤎
-
-A nossa Legging Tradicional na tonalidade Cookie une a compressão perfeita que modela o corpo com cós anatômico duplo que NÃO enrola durante o treino. Zero transparência e toque aveludado único da poliamida premium Glossy!
-
-Disponível nos tamanhos P e M com entrega rápida ou sacolinha condicional para você provar no conforto da sua casa! 🛍️
-
-📲 Envie uma mensagem no direct ou clique no link da bio para garantir a sua antes que esgote!`,
-    hashtags: ['#GlossyUberlandia', '#ModaFitness', '#LookDeTreino', '#UberlandiaFitness', '#LeggingCookie', '#RevendedoraGlossy'],
-    imageUrl: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&auto=format&fit=crop&q=80',
-    scheduledDate: '2026-10-31',
-    scheduledTime: '11:30',
-    status: 'agendado',
-    channels: {
-      instagram: true,
-      facebook: true,
-      whatsappVip: true
-    }
-  },
-  {
-    id: 'sp-2',
-    title: 'Top Live + Legging Wave: O Combo Perfeito para Treino Intenso',
-    format: 'lifestyle',
-    productName: 'Conjunto Top Live & Wave',
-    color: 'Amarelo Manteiga & Acrópole',
-    price: 349.80,
-    caption: `Treinar com um look que te abraça muda completamente a energia do dia! 💛⚡
-
-Você sabia que o tecido Glossy foi desenvolvido com tecnologia de termorregulação e proteção UV50+? Ele mantém a respirabilidade nos treinos mais intensos enquanto o suporte do Top Live garante segurança máxima sem machucar os ombros.
-
-Conforto absoluto do treino ao café da tarde. Qual a sua cor favorita para treinar hoje? Conta pra mim nos comentários! 👇✨`,
-    hashtags: ['#FitnessLifestyle', '#AutoEstimaFeminina', '#LookFitness', '#MulheresQueTreinam', '#GlossyUberlandia', '#TreinoComEstilo'],
-    imageUrl: 'https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=800&auto=format&fit=crop&q=80',
-    scheduledDate: '2026-11-01',
-    scheduledTime: '18:45',
-    status: 'agendado',
-    channels: {
-      instagram: true,
-      facebook: true,
-      whatsappVip: true
-    }
-  },
-  {
-    id: 'sp-3',
-    title: 'Macacão Longo Barolo: Detalhes, Costura e Ajuste Escultural',
-    format: 'apresentacao',
-    productName: 'Macacão Longo',
-    color: 'Barolo',
-    price: 279.90,
-    caption: `A sofisticação em uma única peça: Macacão Longo Glossy na icônica cor Barolo. 🍷🖤
-
-Observe cada acabamento:
-✔ Costura reforçada plana que não marca e não atrita na pele
-✔ Decote traseiro anatômico que valoriza as costas com sustentação
-✔ Tecido cirrê acetinado que esculpe a silhueta com elasticidade multidirecional
-
-Peça única e exclusiva disponível para você em Uberlândia. Quer ver como fica no corpo? Manda uma mensagem no WhatsApp comercial e agendamos sua sacolinha condicional!`,
-    hashtags: ['#MacacaoFitness', '#GlossyVibes', '#ModaAcademia', '#Uberlandia', '#FitnessChic', '#BaroloGlossy'],
-    imageUrl: 'https://images.unsplash.com/photo-1483721074573-58630b3ee08b?w=800&auto=format&fit=crop&q=80',
-    scheduledDate: '2026-11-02',
-    scheduledTime: '12:00',
-    status: 'rascunho',
-    channels: {
-      instagram: true,
-      facebook: false,
-      whatsappVip: true
-    }
   }
 ];
 
