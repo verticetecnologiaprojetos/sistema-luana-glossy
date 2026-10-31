@@ -1,8 +1,8 @@
 export type ItemCategory = 
   | 'Leggings'
   | 'Tops'
-  | 'Croppeds'
-  | 'Bermudas e Shorts'
+  | 'Cropped e Peças Curtas'
+  | 'Bermudas'
   | 'Camisetas'
   | 'Regatas'
   | 'Macacões';
@@ -146,8 +146,10 @@ export interface LinktreeItem {
   subtitle: string;
   url: string;
   badge?: string;
-  type: 'whatsapp' | 'group' | 'pdf' | 'location';
+  type: 'whatsapp' | 'group' | 'pdf' | 'location' | 'link';
   active: boolean;
+  isActive?: boolean;
+  icon?: string;
 }
 
 export interface UserProfile {
@@ -155,10 +157,27 @@ export interface UserProfile {
   email: string;
   phone: string;
   role: string;
+  storeName?: string;
+  avatarUrl?: string;
   city: string;
   baseNeighborhood: string;
   pixKey: string;
   openRouterKey: string;
   instagramUser: string;
   defaultCondicionalHours: number;
+}
+
+export interface SupportTicket {
+  id: string;
+  protocol: string;
+  type: 'bug' | 'melhoria' | 'duvida';
+  title: string;
+  description: string;
+  status: 'aberto' | 'em_analise' | 'em_correcao' | 'resolvido';
+  screenUrl: string;
+  userName: string;
+  userRole: string;
+  createdAt: string;
+  attachmentUrl?: string;
+  response?: string;
 }

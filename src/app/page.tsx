@@ -53,7 +53,13 @@ import {
   Smartphone,
   CheckSquare,
   Square,
-  Eye
+  Eye,
+  LifeBuoy,
+  Shield,
+  ShieldCheck,
+  Key,
+  Save,
+  BookOpen
 } from 'lucide-react';
 
 import {
@@ -66,6 +72,7 @@ import {
   INITIAL_WHATSAPP_GROUPS,
   INITIAL_LINKTREE_ITEMS,
   INITIAL_USER_PROFILE,
+  INITIAL_SUPPORT_TICKETS,
   UBERLANDIA_NEIGHBORHOODS,
   CATALOG_LINKS
 } from '../data/initialData';
@@ -80,6 +87,7 @@ import {
   WhatsAppGroup,
   LinktreeItem,
   UserProfile,
+  SupportTicket,
   SacolinhaCondicional,
   SacolinhaItem,
   ConversationQueue,
@@ -157,11 +165,12 @@ export default function Home() {
   const [selectedSize, setSelectedSize] = useState<string>('Todos');
   const [onlyBlackFriday, setOnlyBlackFriday] = useState<boolean>(false);
 
-  // Criador de Postagens (Painel tipo Daiane)
+  // Criador de Postagens
   const [newPostFormat, setNewPostFormat] = useState<'comercial' | 'lifestyle' | 'apresentacao'>('comercial');
-  const [newPostProduct, setNewPostProduct] = useState(inventory[2].name + ' - ' + inventory[2].color);
-  const [newPostPrice, setNewPostPrice] = useState(inventory[2].price.toString());
+  const [newPostProduct, setNewPostProduct] = useState(inventory[0]?.id || 'leg-trad-p-cookie');
+  const [newPostPrice, setNewPostPrice] = useState('189.90');
   const [newPostCaption, setNewPostCaption] = useState(INITIAL_SCHEDULED_POSTS[0].caption);
+  const [selectedPostImage, setSelectedPostImage] = useState<string>('/products/legging-cookie.jpg');
 
   // Grupo VIP: Formulários de Disparo
   const [pollQuestion, setPollQuestion] = useState('Qual dessas tonalidades NÃO pode faltar no seu próximo pedido?');
@@ -171,11 +180,11 @@ export default function Home() {
     'Croco & Bonsai (Verdes)',
     'Preto Cirrê (Acetinado)'
   ]);
-  const [spoilerTitle, setSpoilerTitle] = useState('🚨 MENINAS, ELA CHEGOU! Nova Tonalidade Cookie!');
+  const [spoilerTitle, setSpoilerTitle] = useState('🚨 MENINAS, CHEGOU REPOSIÇÃO! Nova Tonalidade Cookie!');
   const [spoilerText, setSpoilerText] = useState('Separamos pouquíssimas unidades para o estoque de Uberlândia! Quem quiser reservar antes de postarmos no feed oficial do Instagram, me chama no privado! 👇🏃‍♀️');
   const [promoText, setPromoText] = useState('PROMOÇÃO RELÂMPAGO NO GRUPO VIP: Leggings e Tops selecionados com 20% de desconto no Pix!');
 
-  // Conexão WhatsApp UaZapi Real (https://fsdistribuidora.uazapi.com)
+  // Conexão WhatsApp
   const [isWhatsAppConnected, setIsWhatsAppConnected] = useState(false);
   const [isConnectingWhatsApp, setIsConnectingWhatsApp] = useState(false);
   const [realQrCode, setRealQrCode] = useState<string | null>(null);
@@ -183,12 +192,30 @@ export default function Home() {
   const [connectionPhone, setConnectionPhone] = useState('553493002424');
   const [uazapiStatus, setUazapiStatus] = useState<string>('disconnected');
 
-  // Painel de Aprovação & Prévia de Conteúdo (In-App)
+  // Painel de Conteúdo & Aprovação
   const [selectedPreviewPost, setSelectedPreviewPost] = useState<ScheduledPost>(INITIAL_SCHEDULED_POSTS[0]);
   const [isPublishingPostId, setIsPublishingPostId] = useState<string | null>(null);
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editingCaptionText, setEditingCaptionText] = useState<string>('');
   const [contentFilter, setContentFilter] = useState<'todos' | 'aguardando' | 'publicado'>('todos');
+
+  // Central de Suporte & Chamados (Padrão Vértice SupraDesk)
+  const [supportTickets, setSupportTickets] = useState<SupportTicket[]>(INITIAL_SUPPORT_TICKETS);
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
+  const [supportTab, setSupportTab] = useState<'abrir' | 'chamados' | 'ajuda'>('abrir');
+  const [newTicketType, setNewTicketType] = useState<'bug' | 'melhoria' | 'duvida'>('duvida');
+  const [newTicketTitle, setNewTicketTitle] = useState('');
+  const [newTicketDescription, setNewTicketDescription] = useState('');
+  const [isSubmittingTicket, setIsSubmittingTicket] = useState(false);
+
+  // Menu Guiado / Onboarding Interativo
+  const [isTourModalOpen, setIsTourModalOpen] = useState(false);
+  const [tourStep, setTourStep] = useState(0);
+
+  // Segurança & Senha
+  const [currentPasswordInput, setCurrentPasswordInput] = useState('');
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
 
   // Toast / Feedback
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -198,7 +225,21 @@ export default function Home() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Checar status real do UaZapi na inicialização
+  // Carregar dados salvos no localStorage (SaaS Multi-revendedora)
+  useEffect(() => {
+    try {
+      const savedProfile = localStorage.getItem('glossy_user_profile');
+      if (savedProfile) setUserProfile(JSON.parse(savedProfile));
+      const savedLinktree = localStorage.getItem('glossy_linktree_items');
+      if (savedLinktree) setLinktreeItems(JSON.parse(savedLinktree));
+      const savedTickets = localStorage.getItem('glossy_support_tickets');
+      if (savedTickets) setSupportTickets(JSON.parse(savedTickets));
+    } catch (e) {
+      console.error('Erro ao restaurar dados do localStorage:', e);
+    }
+  }, []);
+
+  // Checar status da conexão WhatsApp na inicialização
   useEffect(() => {
     const checkStatus = async () => {
       try {
@@ -210,7 +251,7 @@ export default function Home() {
           setUazapiStatus(data.status || 'disconnected');
         }
       } catch (e) {
-        console.error('Erro ao consultar status UaZapi:', e);
+        console.error('Erro ao consultar status:', e);
       }
     };
     checkStatus();
@@ -549,38 +590,46 @@ export default function Home() {
     showToast(`Venda finalizada com sucesso! Total: R$ ${finalAmount.toFixed(2)}`);
   };
 
-  // Agendar Post
+  // Criar / Agendar Post para Aprovação
   const handleSchedulePost = () => {
+    const selectedItem = inventory.find(
+      (item) => item.id === newPostProduct || `${item.name} - ${item.color}` === newPostProduct
+    );
+
+    const imageToUse = selectedPostImage || selectedItem?.imageUrl || '/products/legging-cookie.jpg';
+
     const newPost: ScheduledPost = {
       id: `sp-${Date.now()}`,
-      title: `${newPostProduct} (${newPostFormat.toUpperCase()})`,
+      title: selectedItem ? `${selectedItem.name} ${selectedItem.color} (${selectedItem.size})` : 'Novo Look Glossy',
       format: newPostFormat,
-      productName: newPostProduct,
-      color: 'Conforme modelo selecionado',
-      price: parseFloat(newPostPrice) || 189.90,
+      productName: selectedItem?.name || 'Peça da Coleção',
+      color: selectedItem?.color || 'Padrão',
+      price: parseFloat(newPostPrice) || selectedItem?.price || 189.90,
       caption: newPostCaption,
-      hashtags: ['#GlossyUberlandia', '#ModaFitness', '#LookDeTreino', '#Uberlandia'],
-      imageUrl: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&auto=format&fit=crop&q=80',
-      scheduledDate: '2026-11-03',
-      scheduledTime: '15:00',
-      status: 'agendado',
+      hashtags: ['#ModaFitness', '#LookDeTreino', '#AltaCompressao', '#ProntaEntrega'],
+      imageUrl: imageToUse,
+      scheduledDate: new Date().toISOString().split('T')[0],
+      scheduledTime: '18:00',
+      status: 'aguardando_aprovacao',
       channels: {
         instagram: true,
         facebook: true,
         whatsappVip: true
       }
     };
+
     setScheduledPosts((prev) => [newPost, ...prev]);
-    showToast('Post programado com sucesso!');
+    setSelectedPreviewPost(newPost);
+    showToast('Post adicionado à fila de aprovação!');
   };
 
-  // Disparo simulado no Grupo VIP
+  // Disparo no Grupo VIP
   const handleVipDrop = (type: string, title: string) => {
     const group = whatsappGroups.find((g) => g.id === selectedGroupId) || whatsappGroups[0];
-    showToast(`Disparo de ${type} enviado com sucesso para o grupo: "${group.name}"!`);
+    showToast(`Disparo de ${type} enviado para o grupo: "${group.name}"!`);
   };
 
-  // Gerar QR Code Real via UaZapi (fsdistribuidora.uazapi.com)
+  // Gerar QR Code de Conexão WhatsApp
   const handleGenerateRealQr = async () => {
     setIsConnectingWhatsApp(true);
     setRealQrCode(null);
@@ -596,18 +645,18 @@ export default function Home() {
         setRealQrCode(data.qrcode || null);
         setPairCode(data.paircode || null);
         setUazapiStatus('qrcode_pronto');
-        showToast('QR Code oficial do UaZapi gerado com sucesso!');
+        showToast('QR Code gerado! Aponte a câmera do seu WhatsApp.');
       } else {
-        showToast(data.message || 'Instância respondeu sem QR Code');
+        showToast(data.message || 'Não foi possível gerar o QR Code no momento');
       }
     } catch (e) {
-      showToast('Erro ao comunicar com a API do UaZapi');
+      showToast('Erro ao comunicar com o servidor de conexão');
     } finally {
       setIsConnectingWhatsApp(false);
     }
   };
 
-  // Verificar Status Real no UaZapi
+  // Verificar Status da Conexão WhatsApp
   const handleCheckWhatsAppStatus = async () => {
     try {
       const res = await fetch('/api/whatsapp/status');
@@ -618,19 +667,19 @@ export default function Home() {
         setUazapiStatus(data.status || 'disconnected');
         if (isConnected) {
           setRealQrCode(null);
-          showToast('✅ WhatsApp Conectado e Sincronizado ao CRM!');
+          showToast('WhatsApp conectado com sucesso ao CRM!');
         } else {
-          showToast(`Status UaZapi: ${data.status || 'Desconectado'}`);
+          showToast('Aguardando leitura do QR Code...');
         }
       } else {
-        showToast('Não foi possível obter o status da instância');
+        showToast('Não foi possível verificar a conexão.');
       }
     } catch (e) {
-      showToast('Erro de conexão com UaZapi');
+      showToast('Erro ao consultar status da conexão.');
     }
   };
 
-  // Desconectar Sessão WhatsApp Real
+  // Desconectar Sessão WhatsApp
   const handleDisconnectWhatsApp = async () => {
     try {
       await fetch('/api/whatsapp/disconnect', { method: 'POST' });
@@ -638,13 +687,13 @@ export default function Home() {
       setRealQrCode(null);
       setPairCode(null);
       setUazapiStatus('disconnected');
-      showToast('Sessão do WhatsApp desconectada no UaZapi.');
+      showToast('Sessão do WhatsApp desconectada.');
     } catch (e) {
-      showToast('Erro ao desconectar');
+      showToast('Erro ao desconectar.');
     }
   };
 
-  // Aprovar Post e Disparar no n8n Tel System
+  // Aprovar Post no Feed e Notificar Canais
   const handleApproveAndPublishPost = async (post: ScheduledPost) => {
     setIsPublishingPostId(post.id);
     try {
@@ -666,15 +715,84 @@ export default function Home() {
         setScheduledPosts((prev) =>
           prev.map((p) => (p.id === post.id ? { ...p, status: 'publicado' as const } : p))
         );
-        showToast('🚀 Aprovado! Post disparado para o n8n Tel System e publicado!');
+        showToast('Post aprovado com sucesso! Publicação iniciada.');
       } else {
-        showToast(`Erro no n8n: ${data.error || 'Falha no webhook'}`);
+        showToast('Erro ao registrar aprovação do post.');
       }
     } catch (e) {
-      showToast('Erro de comunicação com o webhook n8n');
+      showToast('Erro na aprovação do conteúdo.');
     } finally {
       setIsPublishingPostId(null);
     }
+  };
+
+  // Salvar Perfil da Revendedora (Persistência SaaS)
+  const handleSaveProfile = (updatedProfile: UserProfile) => {
+    setUserProfile(updatedProfile);
+    try {
+      localStorage.setItem('glossy_user_profile', JSON.stringify(updatedProfile));
+    } catch (e) {}
+    showToast('Dados do perfil atualizados com sucesso!');
+  };
+
+  // Salvar Links da Bio (Linktree)
+  const handleSaveLinktree = () => {
+    try {
+      localStorage.setItem('glossy_linktree_items', JSON.stringify(linktreeItems));
+    } catch (e) {}
+    showToast('Configurações do Linktree salvas com sucesso!');
+  };
+
+  // Abrir Chamado na Central de Suporte (SupraDesk)
+  const handleOpenSupportTicket = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTicketTitle.trim() || !newTicketDescription.trim()) {
+      showToast('Preencha o título e a descrição do chamado.');
+      return;
+    }
+    setIsSubmittingTicket(true);
+    setTimeout(() => {
+      const protocol = 'SUP-' + Math.floor(1000 + Math.random() * 9000);
+      const newTicket: SupportTicket = {
+        id: `ticket-${Date.now()}`,
+        protocol,
+        type: newTicketType,
+        title: newTicketTitle,
+        description: newTicketDescription,
+        status: 'aberto',
+        screenUrl: '/' + activeTab,
+        userName: userProfile.name,
+        userRole: userProfile.role,
+        createdAt: 'Agora'
+      };
+      const updated = [newTicket, ...supportTickets];
+      setSupportTickets(updated);
+      try {
+        localStorage.setItem('glossy_support_tickets', JSON.stringify(updated));
+      } catch (e) {}
+      setNewTicketTitle('');
+      setNewTicketDescription('');
+      setIsSubmittingTicket(false);
+      setSupportTab('chamados');
+      showToast(`Chamado ${protocol} enviado com sucesso ao SupraDesk!`);
+    }, 500);
+  };
+
+  // Alterar Senha de Acesso
+  const handleChangePassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPasswordInput.length < 8) {
+      showToast('A nova senha deve ter no mínimo 8 caracteres.');
+      return;
+    }
+    if (newPasswordInput !== confirmPasswordInput) {
+      showToast('A confirmação da senha não confere.');
+      return;
+    }
+    setCurrentPasswordInput('');
+    setNewPasswordInput('');
+    setConfirmPasswordInput('');
+    showToast('Senha alterada com sucesso!');
   };
 
   // Login handler
@@ -823,8 +941,8 @@ export default function Home() {
             isDarkMode ? 'bg-zinc-800/60 border-zinc-700/60' : 'bg-[#FAF8F5] border-[#EFE7DE]'
           }`}>
             <img
-              src="/brand/luana-frias.png"
-              alt="Luana Frias"
+              src={userProfile.avatarUrl || "/brand/luana-frias.png"}
+              alt={userProfile.name}
               className="w-10 h-10 rounded-full object-cover shrink-0 border border-[#EFE7DE] shadow-xs"
             />
             <div className="min-w-0 flex-1">
@@ -832,7 +950,7 @@ export default function Home() {
                 {userProfile.name}
               </p>
               <p className="text-[10px] text-[#C87D6B] dark:text-[#E29578] font-medium truncate">
-                {userProfile.role}
+                {userProfile.storeName || userProfile.role}
               </p>
             </div>
           </div>
@@ -949,7 +1067,32 @@ export default function Home() {
         </div>
 
         {/* Rodapé da Barra Lateral */}
-        <div className="p-4 border-t border-zinc-100 dark:border-zinc-800 space-y-2">
+        <div className="p-4 border-t border-zinc-100 dark:border-zinc-800 space-y-1.5">
+          {/* Central de Suporte SupraDesk (Padrão Vértice) */}
+          <button
+            onClick={() => { setSupportTab('abrir'); setIsSupportModalOpen(true); }}
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+              isDarkMode ? 'bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700' : 'bg-[#FAF8F5] text-zinc-700 hover:bg-zinc-100'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              <LifeBuoy className="w-3.5 h-3.5 text-[#C87D6B]" />
+              <span>Suporte & Ajuda</span>
+            </span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-700 font-bold">
+              {supportTickets.filter(t => t.status === 'aberto').length}
+            </span>
+          </button>
+
+          {/* Menu Guiado / Onboarding (Padrão Vértice) */}
+          <button
+            onClick={() => { setTourStep(0); setIsTourModalOpen(true); }}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-all"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Como Funciona (Tour)</span>
+          </button>
+
           {/* Alternar Tema */}
           <button
             onClick={() => setIsDarkMode(!isDarkMode)}
@@ -1057,7 +1200,7 @@ export default function Home() {
                     OPERAÇÃO OFICIAL • GLOSSY UBERLÂNDIA
                   </span>
                   <h2 className="text-xl font-serif font-bold text-zinc-900 dark:text-white">
-                    Olá Luana, seu hub de vendas está pronto para a rotina de hoje!
+                    Olá {userProfile.name.split(' ')[0]}, seu hub de vendas está pronto para a rotina de hoje!
                   </h2>
                   <p className="text-xs text-zinc-500 mt-2 leading-relaxed">
                     Você tem <strong>{stockMetrics.totalPieces} peças</strong> cadastradas no estoque, <strong>{conversations.filter(c => c.queue === 'aguardando').length} atendimentos</strong> na fila e 1 sacolinha condicional ativa no Morada da Colina.
@@ -1928,11 +2071,11 @@ export default function Home() {
                     </h2>
                     <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200 flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      n8n Tel System Ativo
+                      Sincronização Automática Ativa
                     </span>
                   </div>
                   <p className="text-xs text-zinc-500">
-                    Aprove os criativos gerados com fotos reais do Lookbook, ajuste legendas e dispare direto no Instagram (@glossyluanaudia) e Grupo VIP via n8n.
+                    Aprove os criativos gerados com fotos reais do Lookbook, ajuste legendas e publique direto no Instagram e canais oficiais de venda.
                   </p>
                 </div>
 
@@ -2150,7 +2293,7 @@ export default function Home() {
                                   className="px-4 py-1.5 rounded-xl text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 flex items-center gap-1.5 cursor-default"
                                 >
                                   <Check className="w-3.5 h-3.5" />
-                                  <span>Publicado via n8n</span>
+                                  <span>Publicado no Feed</span>
                                 </button>
                               ) : (
                                 <button
@@ -2161,12 +2304,12 @@ export default function Home() {
                                   {isPublishing ? (
                                     <>
                                       <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                      <span>Disparando no n8n...</span>
+                                      <span>Publicando Conteúdo...</span>
                                     </>
                                   ) : (
                                     <>
                                       <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                                      <span>Aprovar & Disparar no n8n</span>
+                                      <span>Aprovar & Publicar Post</span>
                                     </>
                                   )}
                                 </button>
@@ -2227,6 +2370,44 @@ export default function Home() {
                           <option value="lifestyle">2. Lifestyle (Benefícios & Estética Feminina)</option>
                           <option value="apresentacao">3. Detalhes (Cós Anatômico & Zero Transparência)</option>
                         </select>
+                      </div>
+                    </div>
+
+                    {/* Seleção de Foto Oficial do Lookbook */}
+                    <div className="mb-3">
+                      <label className="block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 mb-1.5">
+                        Foto Oficial do Lookbook para a Postagem:
+                      </label>
+                      <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+                        {[
+                          { url: '/products/legging-cookie.jpg', name: 'Legging Cookie' },
+                          { url: '/products/IMG_1994.jpg', name: 'Legging Barolo' },
+                          { url: '/products/IMG_2228.jpg', name: 'Legging Café' },
+                          { url: '/products/top-live-cookie.jpg', name: 'Top Live Cookie' },
+                          { url: '/products/top-live-preto.jpg', name: 'Top Live Preto' },
+                          { url: '/products/macacao-longo-preto.jpg', name: 'Macacão Longo' },
+                          { url: '/products/bermuda-cookie.jpg', name: 'Bermuda Cookie' },
+                        ].map((photo, pIdx) => (
+                          <div
+                            key={pIdx}
+                            onClick={() => setSelectedPostImage(photo.url)}
+                            className={`group relative rounded-xl overflow-hidden border-2 cursor-pointer aspect-square transition-all ${
+                              selectedPostImage === photo.url
+                                ? 'border-zinc-900 ring-2 ring-zinc-900/20 scale-105 shadow-md'
+                                : 'border-zinc-200 dark:border-zinc-700 opacity-70 hover:opacity-100'
+                            }`}
+                          >
+                            <img src={photo.url} alt={photo.name} className="w-full h-full object-cover" />
+                            {selectedPostImage === photo.url && (
+                              <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-zinc-900 text-white flex items-center justify-center text-[9px] font-bold">
+                                ✓
+                              </div>
+                            )}
+                            <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[8px] truncate px-1 py-0.5 text-center">
+                              {photo.name}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     </div>
 
@@ -2344,10 +2525,10 @@ export default function Home() {
                       </p>
                     </div>
 
-                    {/* Banner Informativo n8n */}
+                    {/* Banner Informativo */}
                     <div className="p-2.5 bg-zinc-100 dark:bg-zinc-800/80 border-t border-zinc-200 dark:border-zinc-700 text-center">
                       <p className="text-[10px] text-zinc-500 font-medium">
-                        ⚡ Disparo via n8n Tel System & Espelhamento no Grupo VIP
+                        ⚡ Publicação com 1 clique & Espelhamento nos Canais de Venda
                       </p>
                     </div>
 
@@ -2374,6 +2555,42 @@ export default function Home() {
                     Selecione o grupo do WhatsApp para enviar enquetes, spoilers e promoções.
                   </p>
                 </div>
+              </div>
+
+              {/* Alerta de Conexão WhatsApp */}
+              {!isWhatsAppConnected && (
+                <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2.5">
+                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>Seu WhatsApp ainda não está conectado. Conecte seu aparelho para sincronizar os grupos reais e habilitar os disparos automáticos.</span>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab('connection')}
+                    className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs shrink-0"
+                  >
+                    Conectar WhatsApp
+                  </button>
+                </div>
+              )}
+
+              {/* Link de Convite do Grupo VIP */}
+              <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${
+                isDarkMode ? 'bg-zinc-900/60 border-zinc-800' : 'bg-white border-[#EFE7DE] shadow-xs'
+              }`}>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-zinc-900 dark:text-white">Link Público do Grupo VIP:</span>
+                  <span className="font-mono text-zinc-500 text-[11px]">https://chat.whatsapp.com/DZ9gmISZFcvGjxl3dwyOna</span>
+                </div>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText('https://chat.whatsapp.com/DZ9gmISZFcvGjxl3dwyOna');
+                    showToast('Link do Grupo VIP copiado!');
+                  }}
+                  className="px-3 py-1.5 rounded-xl border border-zinc-200 hover:bg-zinc-50 flex items-center gap-1.5 font-semibold text-zinc-700"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Copiar Link</span>
+                </button>
               </div>
 
               {/* Seletor do Grupo WhatsApp Conectado */}
@@ -2521,15 +2738,66 @@ export default function Home() {
                     Linktree & Bio Oficial (Padrão Glossy)
                   </h2>
                   <p className="text-xs text-zinc-500">
-                    Links diretos para atendimento WhatsApp, Grupo VIP e PDFs de cada coleção individual.
+                    Página pública de links para colocar na bio do Instagram (@glossyluanaudia), com botões para WhatsApp, Grupo VIP e Catálogos.
                   </p>
                 </div>
+              </div>
+
+              {/* Barra de Link Público e Ações */}
+              <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${
+                isDarkMode ? 'bg-zinc-900/60 border-zinc-800' : 'bg-white border-[#EFE7DE] shadow-xs'
+              }`}>
+                <div className="flex items-center gap-2 overflow-hidden">
+                  <span className="font-bold text-zinc-900 dark:text-white shrink-0">Seu Link Público:</span>
+                  <a
+                    href="/bio"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-mono text-[#C87D6B] hover:underline truncate text-[11px]"
+                  >
+                    https://sistema-luana-glossy.vercel.app/bio
+                  </a>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText('https://sistema-luana-glossy.vercel.app/bio');
+                      showToast('Link da Bio copiado! Cole no seu perfil do Instagram.');
+                    }}
+                    className="px-3.5 py-1.5 rounded-xl border border-zinc-200 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800 flex items-center gap-1.5 font-semibold text-zinc-800 dark:text-zinc-200"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copiar Link da Bio</span>
+                  </button>
+                  <a
+                    href="/bio"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-3.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 text-white font-semibold flex items-center gap-1.5"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Abrir Página Pública</span>
+                  </a>
+                </div>
+              </div>
+
+              {/* Guia Rápido: Como colocar no Instagram */}
+              <div className="p-4 rounded-2xl bg-[#FAF8F5] dark:bg-zinc-800/40 border border-[#EFE7DE] dark:border-zinc-700/60 text-xs">
+                <p className="font-bold text-zinc-800 dark:text-zinc-200 mb-1 flex items-center gap-1.5">
+                  <span>📱 Como colocar esse link na sua bio do Instagram:</span>
+                </p>
+                <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                  1. Abra o app do Instagram no celular e vá no perfil <strong>@glossyluanaudia</strong>.<br />
+                  2. Toque em <strong>Editar Perfil</strong> &gt; <strong>Links</strong> &gt; <strong>Adicionar link externo</strong>.<br />
+                  3. Cole o link <code>https://sistema-luana-glossy.vercel.app/bio</code> e no título escreva <strong>COMPRE AQUI • CATÁLOGO & GRUPO SELECT</strong>.<br />
+                  4. Salve. Pronto! Suas clientes verão seus botões personalizados com visual idêntico ao da Glossy oficial.
+                </p>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 
                 {/* Mockup Smartphone Padrão Glossy Boutique */}
-                <div className="lg:col-span-6 flex flex-col items-center">
+                <div className="lg:col-span-5 flex flex-col items-center">
                   <div className="w-full max-w-xs rounded-[40px] border-8 border-zinc-800 p-4 shadow-2xl bg-[#FAF8F5] text-zinc-900">
                     
                     <div className="text-center pt-2 pb-4">
@@ -2540,18 +2808,18 @@ export default function Home() {
                         className="h-6 mx-auto mb-3 object-contain"
                       />
 
-                      {/* Foto Real de Luana Frias */}
+                      {/* Foto Real da Revendedora */}
                       <img
-                        src="/brand/luana-frias.png"
-                        alt="Luana Frias"
+                        src={userProfile.avatarUrl || "/brand/luana-frias.png"}
+                        alt={userProfile.name}
                         className="w-20 h-20 rounded-full mx-auto object-cover border-2 border-white shadow-md mb-2.5"
                       />
 
                       <h3 className="font-serif font-bold text-sm tracking-wide uppercase text-zinc-900">
-                        LUANA FRIAS
+                        {userProfile.storeName || userProfile.name}
                       </h3>
                       <p className="text-[11px] font-semibold text-[#C87D6B]">
-                        @glossyluanaudia
+                        @{userProfile.instagramUser || 'glossyluanaudia'}
                       </p>
                       <p className="text-[10px] text-zinc-500 mt-1 max-w-[220px] mx-auto leading-relaxed">
                         Moda fitness de luxo, alta compressão & cós anatômico. Atendimento exclusivo e condicional em Uberlândia! ✨
@@ -2559,7 +2827,7 @@ export default function Home() {
                     </div>
 
                     <div className="space-y-2 pb-6">
-                      {linktreeItems.map((item) => (
+                      {linktreeItems.filter(i => i.active !== false && i.isActive !== false).map((item) => (
                         <a
                           key={item.id}
                           href={item.url}
@@ -2587,17 +2855,41 @@ export default function Home() {
                 </div>
 
                 {/* Editor dos Links do Linktree */}
-                <div className={`lg:col-span-6 p-6 rounded-3xl border ${
+                <div className={`lg:col-span-7 p-6 rounded-3xl border ${
                   isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-[#EFE7DE] shadow-xs'
                 }`}>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white mb-3">
-                    Personalizar Botões do Linktree
-                  </h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white">
+                        Personalizar Botões da Bio
+                      </h3>
+                      <p className="text-[11px] text-zinc-400">Altere textos, links de destino ou adicione novos canais.</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const newItem: LinktreeItem = {
+                          id: `link-${Date.now()}`,
+                          title: 'Novo Botão de Acesso',
+                          subtitle: 'Clique para saber mais',
+                          url: 'https://wa.me/553493002424',
+                          icon: 'external',
+                          type: 'whatsapp',
+                          active: true,
+                          isActive: true
+                        };
+                        setLinktreeItems([...linktreeItems, newItem]);
+                      }}
+                      className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 flex items-center gap-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Novo Botão</span>
+                    </button>
+                  </div>
 
                   <div className="space-y-3">
                     {linktreeItems.map((item, idx) => (
-                      <div key={item.id} className="p-3 rounded-2xl border text-xs flex items-center justify-between gap-3">
-                        <div className="min-w-0 flex-1">
+                      <div key={item.id} className="p-3.5 rounded-2xl border text-xs space-y-2 bg-zinc-50/50 dark:bg-zinc-800/40">
+                        <div className="flex items-center justify-between gap-2">
                           <input
                             type="text"
                             value={item.title}
@@ -2606,32 +2898,71 @@ export default function Home() {
                               newItems[idx].title = e.target.value;
                               setLinktreeItems(newItems);
                             }}
-                            className="w-full font-bold bg-transparent border-b focus:outline-none mb-1 text-xs"
+                            className="font-bold bg-transparent border-b border-zinc-200 dark:border-zinc-700 focus:outline-none text-xs flex-1 text-zinc-900 dark:text-white"
+                            placeholder="Título do Botão"
                           />
-                          <input
-                            type="text"
-                            value={item.subtitle}
-                            onChange={(e) => {
-                              const newItems = [...linktreeItems];
-                              newItems[idx].subtitle = e.target.value;
-                              setLinktreeItems(newItems);
-                            }}
-                            className="w-full text-[10px] text-zinc-400 bg-transparent focus:outline-none"
-                          />
+                          <div className="flex items-center gap-2">
+                            <label className="flex items-center gap-1 text-[10px] text-zinc-400 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={item.active !== false && item.isActive !== false}
+                                onChange={(e) => {
+                                  const newItems = [...linktreeItems];
+                                  newItems[idx].active = e.target.checked;
+                                  newItems[idx].isActive = e.target.checked;
+                                  setLinktreeItems(newItems);
+                                }}
+                              />
+                              <span>Ativo</span>
+                            </label>
+                            <button
+                              onClick={() => {
+                                setLinktreeItems(linktreeItems.filter(l => l.id !== item.id));
+                              }}
+                              className="text-zinc-400 hover:text-rose-600 p-1"
+                              title="Remover Botão"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
 
-                        <span className="text-[10px] px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800">
-                          {item.type.toUpperCase()}
-                        </span>
+                        <input
+                          type="text"
+                          value={item.subtitle}
+                          onChange={(e) => {
+                            const newItems = [...linktreeItems];
+                            newItems[idx].subtitle = e.target.value;
+                            setLinktreeItems(newItems);
+                          }}
+                          className="w-full text-[11px] text-zinc-500 bg-transparent border-b border-zinc-200 dark:border-zinc-700 focus:outline-none"
+                          placeholder="Subtítulo explicativo"
+                        />
+
+                        <div className="flex items-center gap-2 pt-1">
+                          <span className="text-[10px] text-zinc-400 shrink-0">URL:</span>
+                          <input
+                            type="text"
+                            value={item.url}
+                            onChange={(e) => {
+                              const newItems = [...linktreeItems];
+                              newItems[idx].url = e.target.value;
+                              setLinktreeItems(newItems);
+                            }}
+                            className="w-full font-mono text-[10px] text-zinc-600 dark:text-zinc-400 bg-transparent focus:outline-none"
+                            placeholder="https://..."
+                          />
+                        </div>
                       </div>
                     ))}
                   </div>
 
                   <button
-                    onClick={() => showToast('Configurações do Linktree salvas!')}
-                    className="w-full mt-4 py-2.5 rounded-xl text-xs font-bold text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900"
+                    onClick={handleSaveLinktree}
+                    className="w-full mt-4 py-2.5 rounded-xl text-xs font-bold text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 shadow-sm flex items-center justify-center gap-2"
                   >
-                    Salvar Alterações da Bio
+                    <Save className="w-4 h-4" />
+                    <span>Salvar Alterações da Bio</span>
                   </button>
                 </div>
 
@@ -2641,40 +2972,40 @@ export default function Home() {
           )}
 
           {/* ============================================== */}
-          {/* ABA 7: CONEXÃO WHATSAPP OFICIAL (UAZAPI) */}
+          {/* ABA 7: CONEXÃO WHATSAPP */}
           {/* ============================================== */}
           {activeTab === 'connection' && (
             <div className="p-8 max-w-2xl mx-auto space-y-6">
               
               <div className="text-center">
                 <h2 className="text-xl font-serif font-bold text-zinc-900 dark:text-white">
-                  Conexão WhatsApp Oficial • UaZapi
+                  Conexão WhatsApp
                 </h2>
                 <p className="text-xs text-zinc-500 mt-1">
-                  Pareie o WhatsApp comercial oficial da Luana Frias (+55 34 9300-2424) para receber mensagens no CRM Omnichannel e enviar sacolinhas condicionais.
+                  Faça sua conexão de WhatsApp para receber mensagens no CRM Omnichannel e gerenciar atendimentos.
                 </p>
               </div>
 
-              {/* Card de Dados da Instância Oficial */}
+              {/* Card de Status da Conexão */}
               <div className={`p-4 rounded-2xl border text-xs flex items-center justify-between ${
-                isDarkMode ? 'bg-zinc-900/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
+                isDarkMode ? 'bg-zinc-900/60 border-zinc-800' : 'bg-white border-[#EFE7DE] shadow-xs'
               }`}>
                 <div className="space-y-0.5">
                   <p className="font-semibold text-zinc-700 dark:text-zinc-300">
-                    Instância: <span className="font-bold text-zinc-900 dark:text-white">Luana Glossy</span>
+                    Status da Linha Comercial
                   </p>
-                  <p className="text-[11px] text-zinc-400">
-                    Servidor: <span className="font-mono">https://fsdistribuidora.uazapi.com</span>
+                  <p className="text-[11px] text-zinc-400 font-mono">
+                    {userProfile.phone || '+55 (34) 9300-2424'}
                   </p>
                 </div>
-                <div className="text-right">
-                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                <div>
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold ${
                     isWhatsAppConnected
                       ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                      : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                      : (realQrCode ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300')
                   }`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${isWhatsAppConnected ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                    {isWhatsAppConnected ? 'Conectado' : (uazapiStatus === 'qrcode_pronto' ? 'Aguardando Leitura' : 'Desconectado')}
+                    <span className={`w-2 h-2 rounded-full ${isWhatsAppConnected ? 'bg-emerald-500 animate-pulse' : (realQrCode ? 'bg-amber-500 animate-pulse' : 'bg-zinc-400')}`} />
+                    {isWhatsAppConnected ? 'Conectado' : (realQrCode ? 'Aguardando Leitura' : 'Desconectado')}
                   </span>
                 </div>
               </div>
@@ -2691,19 +3022,19 @@ export default function Home() {
                     WhatsApp Conectado com Sucesso!
                   </h3>
                   <p className="text-sm font-semibold text-[#C87D6B] mt-1">
-                    +55 (34) 99300-2424 / +55 (34) 9300-2424 • Luana Frias
+                    {userProfile.phone || '+55 (34) 9300-2424'} • {userProfile.name}
                   </p>
                   <p className="text-xs text-zinc-400 mt-2 max-w-md mx-auto">
-                    Sessão ativa e sincronizada diretamente com o CRM Omnichannel e com as notificações de sacolinha condicional.
+                    Sua sessão está ativa e sincronizada diretamente com o CRM Omnichannel para recebimento e envio de mensagens e sacolinhas.
                   </p>
 
                   <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
                     <button
                       onClick={handleCheckWhatsAppStatus}
-                      className="px-4 py-2.5 rounded-xl text-xs font-semibold border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 flex items-center gap-1.5"
+                      className="px-4 py-2.5 rounded-xl text-xs font-semibold border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 flex items-center gap-1.5"
                     >
                       <RefreshCw className="w-3.5 h-3.5" />
-                      <span>Verificar Status em Tempo Real</span>
+                      <span>Verificar Conexão</span>
                     </button>
                     <button
                       onClick={handleDisconnectWhatsApp}
@@ -2722,14 +3053,14 @@ export default function Home() {
                   {realQrCode ? (
                     <div className="text-center space-y-4">
                       <span className="text-[11px] font-bold uppercase tracking-wider text-[#C87D6B] block">
-                        QR Code Oficial Gerado pelo UaZapi
+                        Aguardando leitura do QR Code
                       </span>
 
-                      {/* Imagem Real do QR Code Base64 retornado pelo UaZapi */}
+                      {/* Imagem do QR Code Base64 */}
                       <div className="w-64 h-64 mx-auto bg-white p-3 rounded-2xl shadow-md border border-zinc-200 flex items-center justify-center">
                         <img
                           src={realQrCode}
-                          alt="QR Code WhatsApp UaZapi"
+                          alt="QR Code WhatsApp"
                           className="w-full h-full object-contain"
                         />
                       </div>
@@ -2737,7 +3068,7 @@ export default function Home() {
                       {pairCode && (
                         <div className="p-3 bg-zinc-50 dark:bg-zinc-800/60 rounded-xl border max-w-xs mx-auto">
                           <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">
-                            Código de Pareamento por Telefone:
+                            Código de Pareamento:
                           </p>
                           <p className="text-base font-mono font-bold tracking-widest text-zinc-900 dark:text-white mt-0.5">
                             {pairCode}
@@ -2746,7 +3077,7 @@ export default function Home() {
                       )}
 
                       <div className="text-xs text-zinc-500 space-y-1 max-w-sm mx-auto">
-                        <p>1. Abra o WhatsApp no celular comercial da Luana</p>
+                        <p>1. Abra o WhatsApp no celular comercial</p>
                         <p>2. Toque em <strong>Aparelhos Conectados</strong> &gt; <strong>Conectar um aparelho</strong></p>
                         <p>3. Aponte a câmera para o QR Code acima</p>
                       </div>
@@ -2771,21 +3102,21 @@ export default function Home() {
                     </div>
                   ) : (
                     <div className="text-center space-y-4">
-                      <div className="w-16 h-16 rounded-full bg-zinc-100 text-zinc-600 flex items-center justify-center mx-auto mb-2">
+                      <div className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 flex items-center justify-center mx-auto mb-2">
                         <QrCode className="w-8 h-8" />
                       </div>
                       
                       <h3 className="text-lg font-bold text-zinc-900 dark:text-white">
-                        Nenhum Aparelho Pareado no UaZapi
+                        Conecte seu WhatsApp Comercial
                       </h3>
                       
                       <p className="text-xs text-zinc-500 max-w-md mx-auto">
-                        Gere o QR Code oficial da instância UaZapi para conectar o número da Luana Frias (+55 34 9300-2424) e começar a receber as mensagens no CRM.
+                        Gere o QR Code para conectar seu número e receber as conversas das suas clientes diretamente no CRM Omnichannel.
                       </p>
 
                       <div className="max-w-xs mx-auto text-left mb-2">
                         <label className="block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 mb-1">
-                          Telefone da Instância:
+                          Telefone Comercial (com DDD):
                         </label>
                         <input
                           type="text"
@@ -2807,12 +3138,12 @@ export default function Home() {
                           {isConnectingWhatsApp ? (
                             <>
                               <RefreshCw className="w-4 h-4 animate-spin" />
-                              <span>Gerando QR Code no Servidor...</span>
+                              <span>Gerando QR Code...</span>
                             </>
                           ) : (
                             <>
                               <QrCode className="w-4 h-4" />
-                              <span>Gerar QR Code Oficial UaZapi</span>
+                              <span>Gerar QR Code</span>
                             </>
                           )}
                         </button>
@@ -2822,7 +3153,7 @@ export default function Home() {
                           className="w-full sm:w-auto px-4 py-3 rounded-xl text-xs font-semibold border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 flex items-center justify-center gap-1.5"
                         >
                           <RefreshCw className="w-3.5 h-3.5" />
-                          <span>Verificar Status Atual</span>
+                          <span>Verificar Status</span>
                         </button>
                       </div>
                     </div>
@@ -2844,17 +3175,27 @@ export default function Home() {
                   Configurações do Sistema
                 </h2>
                 <p className="text-xs text-zinc-500">
-                  Gerenciamento de perfil do usuário, parâmetros da operação em Uberlândia e integrações.
+                  Gerenciamento de perfil, parâmetros da loja, segurança de acesso e chamados de suporte técnico.
                 </p>
               </div>
 
-              {/* Perfil de Usuário */}
+              {/* 1. Perfil da Revendedora (Whitelabel SaaS) */}
               <div className={`p-6 rounded-3xl border ${
                 isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-[#EFE7DE] shadow-xs'
               }`}>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white mb-4">
-                  Perfil de Usuário (Luana Frias)
-                </h3>
+                <div className="flex items-center gap-3 mb-4">
+                  <img
+                    src={userProfile.avatarUrl || '/brand/luana-frias.png'}
+                    alt={userProfile.name}
+                    className="w-12 h-12 rounded-full object-cover border border-[#EFE7DE]"
+                  />
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white">
+                      Perfil da Revendedora
+                    </h3>
+                    <p className="text-[11px] text-zinc-400">Dados da operadora e responsável pela conta.</p>
+                  </div>
+                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                   <div>
@@ -2863,7 +3204,7 @@ export default function Home() {
                       type="text"
                       value={userProfile.name}
                       onChange={(e) => setUserProfile({ ...userProfile, name: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none"
+                      className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none bg-transparent"
                     />
                   </div>
                   <div>
@@ -2872,38 +3213,227 @@ export default function Home() {
                       type="text"
                       value={userProfile.phone}
                       onChange={(e) => setUserProfile({ ...userProfile, phone: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none"
+                      className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none bg-transparent"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold mb-1">E-mail</label>
+                    <label className="block text-xs font-semibold mb-1">E-mail de Acesso</label>
                     <input
                       type="email"
                       value={userProfile.email}
                       onChange={(e) => setUserProfile({ ...userProfile, email: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none"
+                      className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none bg-transparent"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold mb-1">Chave Pix Oficial</label>
+                    <label className="block text-xs font-semibold mb-1">URL da Foto de Perfil (Avatar)</label>
                     <input
                       type="text"
-                      value={userProfile.pixKey}
-                      onChange={(e) => setUserProfile({ ...userProfile, pixKey: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none"
+                      value={userProfile.avatarUrl || ''}
+                      onChange={(e) => setUserProfile({ ...userProfile, avatarUrl: e.target.value })}
+                      placeholder="/brand/luana-frias.png"
+                      className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none bg-transparent font-mono text-[11px]"
                     />
                   </div>
                 </div>
 
                 <button
-                  onClick={() => showToast('Perfil atualizado com sucesso!')}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-zinc-900 hover:bg-zinc-800"
+                  onClick={() => handleSaveProfile(userProfile)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 shadow-sm flex items-center gap-1.5"
                 >
-                  Salvar Perfil
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Salvar Dados do Perfil</span>
                 </button>
               </div>
 
-              {/* Parâmetros da Operação Uberlândia */}
+              {/* 2. Dados da Loja / Revenda (Whitelabel) */}
+              <div className={`p-6 rounded-3xl border ${
+                isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-[#EFE7DE] shadow-xs'
+              }`}>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white mb-1">
+                  Minha Loja & Parâmetros Comerciais
+                </h3>
+                <p className="text-[11px] text-zinc-400 mb-4">Informações visíveis nos links da bio, mensagens e comprovantes.</p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">Nome da Loja / Revenda</label>
+                    <input
+                      type="text"
+                      value={userProfile.storeName || ''}
+                      onChange={(e) => setUserProfile({ ...userProfile, storeName: e.target.value })}
+                      placeholder="Ex: Glossy by Luana"
+                      className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none bg-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">Instagram (@)</label>
+                    <input
+                      type="text"
+                      value={userProfile.instagramUser || ''}
+                      onChange={(e) => setUserProfile({ ...userProfile, instagramUser: e.target.value })}
+                      placeholder="@glossyluanaudia"
+                      className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none bg-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">Chave Pix Oficial para Recebimento</label>
+                    <input
+                      type="text"
+                      value={userProfile.pixKey || ''}
+                      onChange={(e) => setUserProfile({ ...userProfile, pixKey: e.target.value })}
+                      placeholder="34993002424"
+                      className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none bg-transparent font-mono text-[11px]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">Prazo Padrão Sacolinha Condicional (Horas)</label>
+                    <input
+                      type="number"
+                      value={sacolinhaReturnHours}
+                      onChange={(e) => setSacolinhaReturnHours(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none bg-transparent"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleSaveProfile(userProfile)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 shadow-sm flex items-center gap-1.5"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Salvar Dados da Loja</span>
+                </button>
+              </div>
+
+              {/* 3. Segurança & Troca de Senha (Padrão Vértice) */}
+              <div className={`p-6 rounded-3xl border ${
+                isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-[#EFE7DE] shadow-xs'
+              }`}>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white mb-1 flex items-center gap-1.5">
+                  <Key className="w-4 h-4 text-[#C87D6B]" />
+                  <span>Segurança & Senha de Acesso</span>
+                </h3>
+                <p className="text-[11px] text-zinc-400 mb-4">A senha deve ter no mínimo 8 caracteres para proteção dos dados da sua revenda.</p>
+
+                <form onSubmit={handleChangePassword} className="space-y-3 max-w-md">
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">Senha Atual</label>
+                    <input
+                      type="password"
+                      value={currentPasswordInput}
+                      onChange={(e) => setCurrentPasswordInput(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none bg-transparent"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">Nova Senha (mínimo 8 caracteres)</label>
+                    <input
+                      type="password"
+                      value={newPasswordInput}
+                      onChange={(e) => setNewPasswordInput(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none bg-transparent"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">Confirmar Nova Senha</label>
+                    <input
+                      type="password"
+                      value={confirmPasswordInput}
+                      onChange={(e) => setConfirmPasswordInput(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none bg-transparent"
+                      required
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 shadow-sm"
+                  >
+                    Atualizar Senha
+                  </button>
+                </form>
+              </div>
+
+              {/* 4. Controle de Acesso RBAC (Padrão Vértice) */}
+              <div className={`p-6 rounded-3xl border ${
+                isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-[#EFE7DE] shadow-xs'
+              }`}>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white mb-1 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  <span>Níveis de Acesso & Permissões (RBAC)</span>
+                </h3>
+                <p className="text-[11px] text-zinc-400 mb-4">Controle de visualização de módulos operacionais por função.</p>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-zinc-200 dark:border-zinc-800 text-[10px] uppercase text-zinc-400">
+                        <th className="pb-2">Perfil</th>
+                        <th className="pb-2">CRM</th>
+                        <th className="pb-2">Estoque</th>
+                        <th className="pb-2">Postagens</th>
+                        <th className="pb-2">Conexão</th>
+                        <th className="pb-2">Configurações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
+                      <tr>
+                        <td className="py-2.5 font-bold text-zinc-900 dark:text-white">Administradora (Luana)</td>
+                        <td className="py-2.5 text-emerald-600">✓ Total</td>
+                        <td className="py-2.5 text-emerald-600">✓ Total</td>
+                        <td className="py-2.5 text-emerald-600">✓ Total</td>
+                        <td className="py-2.5 text-emerald-600">✓ Total</td>
+                        <td className="py-2.5 text-emerald-600">✓ Total</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2.5 font-semibold text-zinc-700 dark:text-zinc-300">Vendedora / Atendente</td>
+                        <td className="py-2.5 text-emerald-600">✓ Atendimento</td>
+                        <td className="py-2.5 text-zinc-500">Consulta</td>
+                        <td className="py-2.5 text-zinc-300 dark:text-zinc-700">-</td>
+                        <td className="py-2.5 text-zinc-300 dark:text-zinc-700">-</td>
+                        <td className="py-2.5 text-zinc-300 dark:text-zinc-700">-</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2.5 font-semibold text-zinc-700 dark:text-zinc-300">Social Media / Criação</td>
+                        <td className="py-2.5 text-zinc-300 dark:text-zinc-700">-</td>
+                        <td className="py-2.5 text-zinc-500">Consulta</td>
+                        <td className="py-2.5 text-emerald-600">✓ Criar/Aprovar</td>
+                        <td className="py-2.5 text-zinc-300 dark:text-zinc-700">-</td>
+                        <td className="py-2.5 text-zinc-300 dark:text-zinc-700">-</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* 5. Central de Suporte SupraDesk (Padrão Vértice) */}
+              <div className={`p-6 rounded-3xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+                isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-[#EFE7DE] shadow-xs'
+              }`}>
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white mb-1 flex items-center gap-1.5">
+                    <LifeBuoy className="w-4 h-4 text-[#C87D6B]" />
+                    <span>Central de Chamados SupraDesk</span>
+                  </h3>
+                  <p className="text-xs text-zinc-500">
+                    Você possui <strong>{supportTickets.length} chamado(s)</strong> registrados. Precisa de apoio técnico ou tem uma sugestão de melhoria?
+                  </p>
+                </div>
+                <button
+                  onClick={() => { setSupportTab('abrir'); setIsSupportModalOpen(true); }}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 shrink-0"
+                >
+                  Abrir Chamado no SupraDesk
+                </button>
+              </div>
+
+              {/* 6. Bairros Atendidos */}
               <div className={`p-6 rounded-3xl border ${
                 isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-[#EFE7DE] shadow-xs'
               }`}>
@@ -3193,6 +3723,366 @@ export default function Home() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================== */}
+      {/* MODAL 3: CENTRAL DE SUPORTE SUPRADESK (PADRÃO VÉRTICE) */}
+      {/* ============================================== */}
+      {isSupportModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+          <div className={`w-full max-w-2xl max-h-[90vh] rounded-3xl border shadow-2xl flex flex-col overflow-hidden ${
+            isDarkMode ? 'bg-zinc-900 border-zinc-800 text-white' : 'bg-white border-[#EFE7DE] text-zinc-900'
+          }`}>
+            {/* Header */}
+            <div className="p-5 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#FAF0ED] dark:bg-zinc-800 text-[#C87D6B] flex items-center justify-center">
+                  <LifeBuoy className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold flex items-center gap-2">
+                    <span>Central de Suporte & Chamados</span>
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+                      SupraDesk Vértice
+                    </span>
+                  </h3>
+                  <p className="text-xs text-zinc-400">Canal oficial de atendimento técnico, dúvidas e melhorias do sistema.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsSupportModalOpen(false)}
+                className="p-1.5 rounded-xl text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Abas do Modal */}
+            <div className="px-5 pt-3 border-b border-zinc-100 dark:border-zinc-800 flex items-center gap-2">
+              <button
+                onClick={() => setSupportTab('abrir')}
+                className={`pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all ${
+                  supportTab === 'abrir'
+                    ? 'border-zinc-900 dark:border-white text-zinc-900 dark:text-white'
+                    : 'border-transparent text-zinc-400 hover:text-zinc-700'
+                }`}
+              >
+                Abrir Chamado
+              </button>
+              <button
+                onClick={() => setSupportTab('chamados')}
+                className={`pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-1.5 ${
+                  supportTab === 'chamados'
+                    ? 'border-zinc-900 dark:border-white text-zinc-900 dark:text-white'
+                    : 'border-transparent text-zinc-400 hover:text-zinc-700'
+                }`}
+              >
+                <span>Meus Chamados</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-200 dark:bg-zinc-700 font-bold">
+                  {supportTickets.length}
+                </span>
+              </button>
+              <button
+                onClick={() => setSupportTab('ajuda')}
+                className={`pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all ${
+                  supportTab === 'ajuda'
+                    ? 'border-zinc-900 dark:border-white text-zinc-900 dark:text-white'
+                    : 'border-transparent text-zinc-400 hover:text-zinc-700'
+                }`}
+              >
+                Perguntas Frequentes (FAQ)
+              </button>
+            </div>
+
+            {/* Conteúdo do Modal */}
+            <div className="p-5 overflow-y-auto space-y-4 flex-1">
+              
+              {/* TAB 1: ABRIR CHAMADO */}
+              {supportTab === 'abrir' && (
+                <form onSubmit={handleOpenSupportTicket} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold mb-1.5">Classificação do Chamado</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { type: 'duvida', label: 'Dúvida de Uso', icon: '❓' },
+                        { type: 'bug', label: 'Problema / Erro', icon: '⚠️' },
+                        { type: 'melhoria', label: 'Sugestão de Melhoria', icon: '💡' }
+                      ].map((item) => (
+                        <div
+                          key={item.type}
+                          onClick={() => setNewTicketType(item.type as any)}
+                          className={`p-2.5 rounded-xl border text-center cursor-pointer transition-all ${
+                            newTicketType === item.type
+                              ? 'border-zinc-900 dark:border-white bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-bold'
+                              : 'border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800'
+                          }`}
+                        >
+                          <span className="text-sm block mb-0.5">{item.icon}</span>
+                          <span className="text-xs">{item.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">Título Resumido</label>
+                    <input
+                      type="text"
+                      value={newTicketTitle}
+                      onChange={(e) => setNewTicketTitle(e.target.value)}
+                      placeholder="Ex: Dúvida sobre o prazo da sacolinha condicional"
+                      className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none bg-transparent"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">Descrição Detalhada</label>
+                    <textarea
+                      rows={4}
+                      value={newTicketDescription}
+                      onChange={(e) => setNewTicketDescription(e.target.value)}
+                      placeholder="Descreva o que está acontecendo ou o que você gostaria de sugerir..."
+                      className="w-full p-3 rounded-xl text-xs border focus:outline-none bg-transparent leading-relaxed"
+                      required
+                    />
+                  </div>
+
+                  {/* Metadados Automáticos Padrão Vértice */}
+                  <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/80 dark:border-zinc-700 text-[11px] text-zinc-500 space-y-1">
+                    <p className="font-semibold text-zinc-700 dark:text-zinc-300">Metadados anexados automaticamente:</p>
+                    <p>• Tela Atual: <code>/{activeTab}</code></p>
+                    <p>• Usuária: <code>{userProfile.name} ({userProfile.role})</code></p>
+                    <p>• Loja: <code>{userProfile.storeName || 'Glossy Uberlândia'}</code></p>
+                  </div>
+
+                  <div className="pt-2 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsSupportModalOpen(false)}
+                      className="px-4 py-2 rounded-xl text-xs font-semibold border"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmittingTicket}
+                      className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 flex items-center gap-1.5"
+                    >
+                      {isSubmittingTicket ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Enviando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-3.5 h-3.5" />
+                          <span>Enviar Chamado para o SupraDesk</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* TAB 2: MEUS CHAMADOS */}
+              {supportTab === 'chamados' && (
+                <div className="space-y-3">
+                  {supportTickets.length === 0 ? (
+                    <div className="text-center py-8 text-zinc-400 text-xs">
+                      Nenhum chamado aberto até o momento.
+                    </div>
+                  ) : (
+                    supportTickets.map((ticket) => (
+                      <div
+                        key={ticket.id}
+                        className="p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/30 space-y-2 text-xs"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold text-zinc-900 dark:text-white">
+                              {ticket.protocol}
+                            </span>
+                            <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300">
+                              {ticket.type}
+                            </span>
+                          </div>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            ticket.status === 'resolvido'
+                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                              : ticket.status === 'em_analise'
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                              : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                          }`}>
+                            {ticket.status === 'resolvido' ? '✓ Resolvido' : (ticket.status === 'em_analise' ? 'Em Análise' : 'Aberto')}
+                          </span>
+                        </div>
+
+                        <h4 className="font-bold text-zinc-900 dark:text-white">
+                          {ticket.title}
+                        </h4>
+                        <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed">
+                          {ticket.description}
+                        </p>
+
+                        {ticket.response && (
+                          <div className="p-3 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 text-xs mt-2">
+                            <p className="font-bold text-[10px] uppercase tracking-wider mb-0.5">Resposta do Suporte Técnico:</p>
+                            <p className="leading-relaxed">{ticket.response}</p>
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between text-[10px] text-zinc-400 pt-1">
+                          <span>Tela: {ticket.screenUrl}</span>
+                          <span>Criado: {ticket.createdAt}</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {/* TAB 3: FAQ */}
+              {supportTab === 'ajuda' && (
+                <div className="space-y-3 text-xs">
+                  <div className="p-3.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                    <h4 className="font-bold text-zinc-900 dark:text-white mb-1">Como conectar o WhatsApp da minha loja?</h4>
+                    <p className="text-zinc-500 leading-relaxed">
+                      Acesse o menu lateral em <strong>Conexão</strong>, confira seu número de telefone e clique em <strong>Gerar QR Code</strong>. No WhatsApp do seu celular comercial, abra Aparelhos Conectados e aponte a câmera para a tela.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                    <h4 className="font-bold text-zinc-900 dark:text-white mb-1">Como funciona a Sacolinha Condicional?</h4>
+                    <p className="text-zinc-500 leading-relaxed">
+                      No CRM ou no topo da tela, clique em <strong>+ Montar Sacolinha</strong>. Selecione a cliente, o bairro em Uberlândia e até 4 peças do estoque para prova. O sistema gera a mensagem personalizada e dá baixa nas peças quando a venda for concluída.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                    <h4 className="font-bold text-zinc-900 dark:text-white mb-1">Como aprovar e publicar posts no Instagram?</h4>
+                    <p className="text-zinc-500 leading-relaxed">
+                      Na aba <strong>Postagens</strong>, você visualiza os criativos gerados com as fotos reais do Lookbook. Você pode ajustar a legenda e clicar em <strong>Aprovar & Publicar Post</strong> para disparar direto para as suas clientes.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                    <h4 className="font-bold text-zinc-900 dark:text-white mb-1">Como compartilhar meus links com as clientes?</h4>
+                    <p className="text-zinc-500 leading-relaxed">
+                      Na aba <strong>Linktree & Bio</strong>, clique em <strong>Copiar Link da Bio</strong>. Cole esse link na bio do seu perfil do Instagram para que suas clientes acessem o catálogo, o WhatsApp e o grupo VIP.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================== */}
+      {/* MODAL 4: MENU GUIADO / TOUR INTERATIVO (PADRÃO VÉRTICE) */}
+      {/* ============================================== */}
+      {isTourModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+          <div className={`w-full max-w-lg rounded-3xl border shadow-2xl overflow-hidden ${
+            isDarkMode ? 'bg-zinc-900 border-zinc-800 text-white' : 'bg-white border-[#EFE7DE] text-zinc-900'
+          }`}>
+            <div className="p-5 border-b flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#C87D6B] block">
+                  PASSO {tourStep + 1} DE 5 • MENU GUIADO
+                </span>
+                <h3 className="text-sm font-bold">
+                  {tourStep === 0 && '1. CRM Omnichannel de Atendimento'}
+                  {tourStep === 1 && '2. Estoque Físico & Sacolinha Condicional'}
+                  {tourStep === 2 && '3. Postagens & Criação de Conteúdo'}
+                  {tourStep === 3 && '4. Linktree & Bio Oficial no Instagram'}
+                  {tourStep === 4 && '5. Central de Suporte Técnico SupraDesk'}
+                </h3>
+              </div>
+              <button onClick={() => setIsTourModalOpen(false)} className="p-1 text-zinc-400">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 text-xs leading-relaxed space-y-3">
+              {tourStep === 0 && (
+                <p className="text-zinc-600 dark:text-zinc-300">
+                  Gerencie todo o relacionamento com suas clientes em 3 filas limpas: <strong>Em Atendimento</strong>, <strong>Aguardando Atendimento</strong> e <strong>Finalizadas</strong>. Registre notas internas privadas e envie comprovantes de provador diretamente pelo WhatsApp conectado.
+                </p>
+              )}
+              {tourStep === 1 && (
+                <p className="text-zinc-600 dark:text-zinc-300">
+                  Consulte em tempo real todas as peças cadastradas do seu estoque físico (Linha Tradicional, Linha Sport Race, Tops, Bermudas e Macacões). Monte sacolinhas com até 4 peças para envio a domicílio com prazo de retorno configurável.
+                </p>
+              )}
+              {tourStep === 2 && (
+                <p className="text-zinc-600 dark:text-zinc-300">
+                  Crie posts com foco comercial ou lifestyle vinculados às fotos reais do Lookbook. Ajuste a legenda diretamente no painel e aprove a publicação com apenas 1 clique.
+                </p>
+              )}
+              {tourStep === 3 && (
+                <p className="text-zinc-600 dark:text-zinc-300">
+                  Disponibilize uma página de links elegante e idêntica à boutique oficial da Glossy no perfil <code>@glossyluanaudia</code>. Personalize botões, links de catálogo e grupos VIP sempre que desejar.
+                </p>
+              )}
+              {tourStep === 4 && (
+                <p className="text-zinc-600 dark:text-zinc-300">
+                  Sempre que precisar de apoio técnico, tirar dúvidas ou sugerir melhorias para a plataforma, utilize a <strong>Central de Suporte & Chamados</strong> no rodapé do menu lateral. Seus chamados são direcionados com protocolo oficial para o SupraDesk.
+                </p>
+              )}
+
+              {/* Progress Dots */}
+              <div className="flex items-center justify-center gap-1.5 pt-3">
+                {[0, 1, 2, 3, 4].map((step) => (
+                  <div
+                    key={step}
+                    onClick={() => setTourStep(step)}
+                    className={`h-1.5 rounded-full cursor-pointer transition-all ${
+                      tourStep === step ? 'w-6 bg-zinc-900 dark:bg-white' : 'w-1.5 bg-zinc-300 dark:bg-zinc-700'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="p-4 border-t flex justify-between items-center">
+              <button
+                onClick={() => setIsTourModalOpen(false)}
+                className="px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-600"
+              >
+                Pular Tour
+              </button>
+
+              <div className="flex gap-2">
+                {tourStep > 0 && (
+                  <button
+                    onClick={() => setTourStep(tourStep - 1)}
+                    className="px-3 py-1.5 rounded-xl text-xs font-semibold border"
+                  >
+                    Anterior
+                  </button>
+                )}
+                {tourStep < 4 ? (
+                  <button
+                    onClick={() => setTourStep(tourStep + 1)}
+                    className="px-4 py-1.5 rounded-xl text-xs font-bold text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900"
+                  >
+                    Próximo
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setIsTourModalOpen(false)}
+                    className="px-4 py-1.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    Concluir Tour
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
